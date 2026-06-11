@@ -460,3 +460,58 @@
 .badge.bg-teal {
     background-color: #20c997 !important;
 }
+
+/* ---- 菜品库管理页面 ---- */
+.library-dish-card {
+    transition: all 0.2s ease;
+}
+.library-dish-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12) !important;
+}
+.library-dish-card.border-warning {
+    border-left: 4px solid #ffc107;
+}
+.dish-card-img {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* ---- 匹配置信度徽章 ---- */
+.match-confidence-badge.high { background-color: #198754; color: white; }
+.match-confidence-badge.medium { background-color: #ffc107; color: #212529; }
+.match-confidence-badge.low { background-color: #fd7e14; color: white; }
+
+/* ---- 参考图缩略图 ---- */
+.ref-thumb {
+    transition: transform 0.2s;
+}
+.ref-thumb:hover {
+    transform: scale(2.5);
+    z-index: 999;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+/* ---- 合成器 ---- */
+.compositor-preview {
+    min-height: 350px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.dish-check-item {
+    transition: background 0.15s;
+}
+.dish-check-item:hover {
+    background: #f0f4ff;
+}
+
+/* ---- 匹配信息横幅 ---- */
+.analysis-method-banner {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+.analysis-method-banner.closed_set { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.analysis-method-banner.smart_demo { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+.analysis-method-banner.real_ai { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }

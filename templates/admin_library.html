@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}菜品库管理 - 固定菜品库{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- 面包屑 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">首页</a></li>
+            <li class="breadcrumb-item active">菜品库管理</li>
+        </ol>
+    </nav>
+
+    <!-- 顶部说明 -->
+    <div class="alert alert-info border-0 shadow-sm mb-4">
+        <h5 class="alert-heading"><i class="fas fa-database me-2"></i>固定菜品库管理系统</h5>
+        <p class="mb-0">
+            管理用于AI闭集匹配的固定菜品库。每道菜需要上传<strong>参考照片</strong>（清晰展示该菜品外观），
+            AI会对比参考照片来识别上传的餐盘/自助餐台图片，<strong>只从菜品库中匹配，不会编造菜品库中没有的菜</strong>。
+        </p>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：菜品卡片网格 -->
+        <div class="col-lg-7">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="fas fa-utensils me-2 text-primary"></i>菜品库
+                    <span class="badge bg-primary ms-2" id="dish-count">{{ dishes|length }}</span>
+                </h4>
+                <button class="btn btn-outline-primary btn-sm" onclick="resetForm()">
+                    <i class="fas fa-plus me-1"></i>添加新菜品
+                </button>
+            </div>
+
+            <div class="row g-3" id="dish-grid">
+                {% for dish in dishes %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="card library-dish-card h-100 shadow-sm {% if not dish.has_references %}border-warning{% endif %}"
+                         id="card-{{ dish.id }}">
+                        <!-- 参考图预览 -->
+                        <div class="card-img-top dish-card-img"
+                             style="height:160px; background:#f8f9fa; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                            {% if dish.reference_images %}
+                            <img src="/static/reference_dishes/{{ dish.id }}/{{ dish.reference_images[0] }}"
+                                 alt="{{ dish.name }}" style="width:100%; height:100%; object-fit:cover;">
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-camera fa-3x mb-2 d-block"></i>
+                                <small>暂无参考图</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-1">{{ dish.name }}</h6>
+                            <div class="mb-2">
+                                <span class="badge bg-primary category-badge">{{ dish.category }}</span>
+                                <span class="badge bg-secondary cooking-badge">{{ dish.cooking }}</span>
+                                {% if dish.ref_count > 0 %}
+                                <span class="badge bg-success ref-badge" title="{{ dish.ref_count }}张参考图">
+                                    <i class="fas fa-image me-1"></i>{{ dish.ref_count }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark ref-badge">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>缺图
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="card-text small text-muted mb-2" style="font-size:0.8rem;">
+                                {{ dish.visual_features[:60] }}{% if dish.visual_features|length > 60 %}...{% endif %}
+                            </p>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="editDish('{{ dish.id }}')">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </button>
+                                <button class="btn btn-sm btn-outline-info"
+                                        onclick="showUploadRef('{{ dish.id }}', '{{ dish.name }}')">
+                                    <i class="fas fa-image"></i> 加图
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmDelete('{{ dish.id }}', '{{ dish.name }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not dishes %}
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="fas fa-utensils fa-4x mb-3 d-block"></i>
+                    <h5>菜品库为空</h5>
+                    <p>点击"添加新菜品"按钮开始录入12道固定菜品</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 右侧：添加/编辑表单 -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm sticky-top" style="top: 80px; z-index: 100;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0" id="form-title">
+                        <i class="fas fa-plus-circle me-2"></i>添加新菜品
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
+                    <form id="dish-form" action="/admin/library/add" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" id="form-mode" name="form_mode" value="add">
+                        <input type="hidden" id="dish-id" name="id" value="">
+
+                        <div class="mb-3">
+                            <label class="form-label">菜品ID（英文）<span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="input-id" name="id"
+                                   placeholder="如: guobaorou" required pattern="[a-z0-9_]+">
+                            <small class="text-muted">小写英文+数字，不可修改</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">中文名称<span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="input-name" name="name"
+                                       placeholder="如: 锅包肉" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">英文名称</label>
+                                <input type="text" class="form-control" id="input-name_en" name="name_en"
+                                       placeholder="English name">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">分类<span class="text-danger">*</span></label>
+                                <select class="form-select" id="input-category" name="category" required>
+                                    <option value="">选择分类</option>
+                                    <option value="肉类">肉类</option>
+                                    <option value="海鲜">海鲜</option>
+                                    <option value="蔬菜">蔬菜</option>
+                                    <option value="主食">主食</option>
+                                    <option value="汤品">汤品</option>
+                                    <option value="甜点">甜点</option>
+                                    <option value="水果">水果</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">烹饪方式</label>
+                                <select class="form-select" id="input-cooking" name="cooking">
+                                    <option value="">选择方式</option>
+                                    <option value="炒">炒</option>
+                                    <option value="炸">炸</option>
+                                    <option value="蒸">蒸</option>
+                                    <option value="炖">炖</option>
+                                    <option value="煮">煮</option>
+                                    <option value="烤">烤</option>
+                                    <option value="凉拌">凉拌</option>
+                                    <option value="生食">生食</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">简要描述</label>
+                            <textarea class="form-control" id="input-description" name="description"
+                                      rows="2" placeholder="一句话描述这道菜"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">视觉特征描述<span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="input-visual_features" name="visual_features"
+                                      rows="3" placeholder="详细描述菜品的颜色、形状、纹理、光泽等AI识别用的视觉特征" required></textarea>
+                            <small class="text-muted">这是给AI识别用的关键信息，越详细准确越好</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">典型摆盘外观</label>
+                            <textarea class="form-control" id="input-plate_appearance" name="typical_plate_appearance"
+                                      rows="2" placeholder="描述这道菜在自助餐盘中通常的摆盘方式"></textarea>
+                        </div>
+
+                        <!-- 营养成分 -->
+                        <h6 class="text-muted mb-2">营养成分（每份）</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label small">热量(kcal)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-calories" name="calories" value="0">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small">蛋白质(g)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-protein" name="protein" value="0" step="0.1">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small">碳水(g)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-carbs" name="carbs" value="0" step="0.1">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-3">
+                                <label class="form-label small">脂肪(g)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-fat" name="fat" value="0" step="0.1">
+                            </div>
+                            <div class="col-3">
+                                <label class="form-label small">纤维(g)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-fiber" name="fiber" value="0" step="0.1">
+                            </div>
+                            <div class="col-3">
+                                <label class="form-label small">钠(mg)</label>
+                                <input type="number" class="form-control form-control-sm" id="input-sodium" name="sodium" value="0">
+                            </div>
+                            <div class="col-3">
+                                <label class="form-label small">GI值</label>
+                                <input type="number" class="form-control form-control-sm" id="input-gi" name="gi" value="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">原价(元)</label>
+                            <input type="number" class="form-control" id="input-price" name="original_price" value="0">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">参考图片</label>
+                            <input type="file" class="form-control" id="input-image" name="reference_image"
+                                   accept="image/jpeg,image/png,image/webp">
+                            <small class="text-muted">上传清晰展示菜品外观的照片（JPEG/PNG/WebP）</small>
+                            <div id="image-preview" class="mt-2 d-none">
+                                <img src="" alt="预览" style="max-width:100%; max-height:200px; border-radius:8px;">
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1" id="submit-btn">
+                                <i class="fas fa-plus-circle me-1"></i>添加菜品
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                重置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除菜品 <strong id="delete-dish-name"></strong> 吗？</p>
+                <p class="text-danger mb-0"><small>此操作同时删除该菜品的所有参考图片，不可恢复。</small></p>
+            </div>
+            <div class="modal-footer">
+                <form id="delete-form" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 追加参考图模态框 -->
+<div class="modal fade" id="uploadRefModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-image me-2"></i>追加参考图片</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>为 <strong id="upload-ref-dish-name"></strong> 追加参考图片</p>
+                <form id="upload-ref-form" method="POST" enctype="multipart/form-data">
+                    <input type="file" class="form-control" name="reference_image"
+                           accept="image/jpeg,image/png,image/webp" required>
+                    <small class="text-muted">可多次追加，建议每道菜有1-3张不同角度的参考图</small>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info text-white" onclick="document.getElementById('upload-ref-form').submit();">
+                    上传
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 菜品数据（从服务端注入，用于编辑时填充表单）
+const dishesData = {{ dishes|tojson }};
+
+// 预览上传图片
+document.getElementById('input-image').addEventListener('change', function(e) {
+    const preview = document.getElementById('image-preview');
+    const img = preview.querySelector('img');
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) { img.src = e.target.result; };
+        reader.readAsDataURL(this.files[0]);
+        preview.classList.remove('d-none');
+    } else {
+        preview.classList.add('d-none');
+    }
+});
+
+// 编辑菜品
+function editDish(dishId) {
+    const dish = dishesData.find(d => d.id === dishId);
+    if (!dish) return;
+
+    document.getElementById('form-title').innerHTML = '<i class="fas fa-edit me-2"></i>编辑: ' + dish.name;
+    document.getElementById('form-mode').value = 'edit';
+    document.getElementById('dish-form').action = '/admin/library/' + dishId + '/edit';
+    document.getElementById('submit-btn').innerHTML = '<i class="fas fa-save me-1"></i>保存修改';
+
+    document.getElementById('dish-id').value = dish.id;
+    document.getElementById('input-id').value = dish.id;
+    document.getElementById('input-id').disabled = true;
+    document.getElementById('input-name').value = dish.name || '';
+    document.getElementById('input-name_en').value = dish.name_en || '';
+    document.getElementById('input-category').value = dish.category || '';
+    document.getElementById('input-cooking').value = dish.cooking || '';
+    document.getElementById('input-description').value = dish.description || '';
+    document.getElementById('input-visual_features').value = dish.visual_features || '';
+    document.getElementById('input-plate_appearance').value = dish.typical_plate_appearance || '';
+    document.getElementById('input-calories').value = dish.calories || 0;
+    document.getElementById('input-protein').value = dish.protein || 0;
+    document.getElementById('input-carbs').value = dish.carbs || 0;
+    document.getElementById('input-fat').value = dish.fat || 0;
+    document.getElementById('input-fiber').value = dish.fiber || 0;
+    document.getElementById('input-sodium').value = dish.sodium || 0;
+    document.getElementById('input-gi').value = dish.gi || 0;
+    document.getElementById('input-price').value = dish.original_price || 0;
+
+    // 滚动到表单
+    document.querySelector('.sticky-top').scrollIntoView({behavior: 'smooth'});
+}
+
+// 重置表单
+function resetForm() {
+    document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle me-2"></i>添加新菜品';
+    document.getElementById('form-mode').value = 'add';
+    document.getElementById('dish-form').action = '/admin/library/add';
+    document.getElementById('submit-btn').innerHTML = '<i class="fas fa-plus-circle me-1"></i>添加菜品';
+    document.getElementById('dish-form').reset();
+    document.getElementById('input-id').disabled = false;
+    document.getElementById('image-preview').classList.add('d-none');
+    document.querySelector('.sticky-top').scrollIntoView({behavior: 'smooth'});
+}
+
+// 删除确认
+function confirmDelete(dishId, dishName) {
+    document.getElementById('delete-dish-name').textContent = dishName;
+    document.getElementById('delete-form').action = '/admin/library/' + dishId + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// 追加参考图
+function showUploadRef(dishId, dishName) {
+    document.getElementById('upload-ref-dish-name').textContent = dishName;
+    document.getElementById('upload-ref-form').action = '/admin/library/' + dishId + '/upload_ref';
+    new bootstrap.Modal(document.getElementById('uploadRefModal')).show();
+}
+
+// 页面加载时若菜品库为空，自动聚焦ID输入框
+document.addEventListener('DOMContentLoaded', function() {
+    if (dishesData.length === 0) {
+        setTimeout(function() {
+            document.getElementById('input-id').focus();
+        }, 300);
+    }
+});
+</script>
+{% endblock %}

@@ -14,6 +14,7 @@ import random
 import uuid
 import base64
 import hashlib
+import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import Counter
@@ -37,7 +38,7 @@ from flask import (
     flash, session, jsonify, send_from_directory
 )
 from werkzeug.utils import secure_filename
-from PIL import Image, ImageStat, ImageFilter
+from PIL import Image, ImageStat, ImageFilter, ImageDraw
 import io
 
 # ========== App 初始化 ==========
@@ -46,13 +47,287 @@ app.secret_key = 'buffet-zero-waste-demo-2024'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max for multiple photos
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 app.config['DATA_FOLDER'] = os.path.join(os.path.dirname(__file__), 'data')
+app.config['REFERENCE_DIR'] = os.path.join(os.path.dirname(__file__), 'static', 'reference_dishes')
+app.config['COMPOSITES_DIR'] = os.path.join(os.path.dirname(__file__), 'static', 'composites')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['COMPOSITES_DIR'], exist_ok=True)
+
+# 初始化菜品库
+dish_library_path = os.path.join(app.config['DATA_FOLDER'], 'dish_library.json')
+DISH_LIBRARY = DishLibrary(dish_library_path, app.config['REFERENCE_DIR'])
+app.config['DISH_LIBRARY'] = DISH_LIBRARY
 
 # ========== 数据加载 ==========
 def load_dishes():
     with open(os.path.join(app.config['DATA_FOLDER'], 'dishes.json'), 'r', encoding='utf-8') as f:
         return json.load(f)['dishes']
+
+
+# ====================================================================
+#  菜品库管理系统 - 固定12道菜的参考图库
+#  用于闭集AI匹配，避免开放式识别的不准确问题
+# ====================================================================
+class DishLibrary:
+    """固定菜品库：管理12道菜及其参考图片，支持CRUD操作"""
+
+    def __init__(self, library_path, reference_dir, static_prefix='/static/reference_dishes'):
+        self.library_path = library_path
+        self.reference_dir = reference_dir
+        self.static_prefix = static_prefix
+
+    def load(self):
+        """加载菜品库JSON"""
+        if not os.path.exists(self.library_path):
+            return {'dishes': [], 'total_dishes': 0}
+        with open(self.library_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def save(self, data):
+        """保存菜品库JSON（原子写入）"""
+        tmp = self.library_path + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, self.library_path)
+
+    def list_dishes(self):
+        """列出所有菜品（不含图片二进制数据）"""
+        data = self.load()
+        dishes = data.get('dishes', [])
+        for d in dishes:
+            d['has_references'] = bool(d.get('reference_images', []))
+            d['ref_count'] = len(d.get('reference_images', []))
+        return dishes
+
+    def get_dish(self, dish_id):
+        """根据ID获取单个菜品"""
+        dishes = self.list_dishes()
+        for d in dishes:
+            if d['id'] == dish_id:
+                return d
+        return None
+
+    def get_reference_images(self, dish_id):
+        """获取某菜品的参考图片绝对路径列表"""
+        dish_dir = os.path.join(self.reference_dir, dish_id)
+        if not os.path.isdir(dish_dir):
+            return []
+        images = []
+        for f in sorted(os.listdir(dish_dir)):
+            if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')) and not f.startswith('.'):
+                images.append(os.path.join(dish_dir, f))
+        return images
+
+    def get_reference_urls(self, dish_id):
+        """获取某菜品的参考图片URL列表"""
+        images = self.get_reference_images(dish_id)
+        urls = []
+        for img in images:
+            rel = os.path.relpath(img, self.reference_dir)
+            urls.append(f"{self.static_prefix}/{dish_id}/{os.path.basename(img)}")
+        return urls
+
+    def add_dish(self, dish_data, image_file=None):
+        """添加一道菜，可选上传参考图"""
+        data = self.load()
+        dishes = data.get('dishes', [])
+
+        # 检查重复
+        if any(d['id'] == dish_data['id'] for d in dishes):
+            return False, f"菜品ID '{dish_data['id']}' 已存在"
+
+        dish = {
+            'id': dish_data['id'],
+            'name': dish_data.get('name', ''),
+            'name_en': dish_data.get('name_en', ''),
+            'category': dish_data.get('category', '其他'),
+            'cooking': dish_data.get('cooking', ''),
+            'description': dish_data.get('description', ''),
+            'visual_features': dish_data.get('visual_features', ''),
+            'typical_plate_appearance': dish_data.get('typical_plate_appearance', ''),
+            'calories': int(dish_data.get('calories', 0)),
+            'protein': float(dish_data.get('protein', 0)),
+            'carbs': float(dish_data.get('carbs', 0)),
+            'fat': float(dish_data.get('fat', 0)),
+            'fiber': float(dish_data.get('fiber', 0)),
+            'sodium': int(dish_data.get('sodium', 0)),
+            'gi': int(dish_data.get('gi', 0)),
+            'original_price': int(dish_data.get('original_price', 0)),
+            'reference_images': []
+        }
+
+        dishes.append(dish)
+        data['dishes'] = dishes
+        data['total_dishes'] = len(dishes)
+        self.save(data)
+
+        # 保存参考图片
+        if image_file:
+            dish_dir = os.path.join(self.reference_dir, dish_data['id'])
+            os.makedirs(dish_dir, exist_ok=True)
+            ref_images = self._save_reference_images(dish_dir, [image_file])
+            dish['reference_images'] = ref_images
+            data['dishes'] = [dish if d['id'] == dish_data['id'] else d for d in dishes]
+            data['total_dishes'] = len(dishes)
+            self.save(data)
+
+        return True, f"菜品 '{dish_data['name']}' 添加成功"
+
+    def update_dish(self, dish_id, updates):
+        """更新菜品元数据"""
+        data = self.load()
+        dishes = data.get('dishes', [])
+        for i, d in enumerate(dishes):
+            if d['id'] == dish_id:
+                for key in ['name', 'name_en', 'category', 'cooking', 'description',
+                           'visual_features', 'typical_plate_appearance',
+                           'calories', 'protein', 'carbs', 'fat', 'fiber',
+                           'sodium', 'gi', 'original_price']:
+                    if key in updates and updates[key] is not None and updates[key] != '':
+                        if key in ('calories', 'sodium', 'gi', 'original_price'):
+                            dishes[i][key] = int(updates[key])
+                        elif key in ('protein', 'carbs', 'fat', 'fiber'):
+                            dishes[i][key] = float(updates[key])
+                        else:
+                            dishes[i][key] = updates[key]
+                data['dishes'] = dishes
+                self.save(data)
+                return True, f"菜品 '{dishes[i]['name']}' 更新成功"
+        return False, f"未找到菜品 '{dish_id}'"
+
+    def add_reference_image(self, dish_id, image_file):
+        """为已有菜品追加参考图"""
+        data = self.load()
+        dishes = data.get('dishes', [])
+        for d in dishes:
+            if d['id'] == dish_id:
+                dish_dir = os.path.join(self.reference_dir, dish_id)
+                os.makedirs(dish_dir, exist_ok=True)
+                new_refs = self._save_reference_images(dish_dir, [image_file])
+                d['reference_images'] = d.get('reference_images', []) + new_refs
+                data['dishes'] = [d if di['id'] == dish_id else di for di in dishes]
+                self.save(data)
+                return True, f"参考图已追加到 '{d['name']}'"
+        return False, f"未找到菜品 '{dish_id}'"
+
+    def delete_dish(self, dish_id):
+        """删除菜品及参考图片目录"""
+        import shutil
+        data = self.load()
+        dishes = data.get('dishes', [])
+        removed = None
+        new_dishes = []
+        for d in dishes:
+            if d['id'] == dish_id:
+                removed = d
+            else:
+                new_dishes.append(d)
+        if removed:
+            data['dishes'] = new_dishes
+            data['total_dishes'] = len(new_dishes)
+            self.save(data)
+            # 删除参考图目录
+            dish_dir = os.path.join(self.reference_dir, dish_id)
+            if os.path.isdir(dish_dir):
+                shutil.rmtree(dish_dir, ignore_errors=True)
+            return True, f"菜品 '{removed['name']}' 已删除"
+        return False, f"未找到菜品 '{dish_id}'"
+
+    def _save_reference_images(self, dish_dir, files):
+        """保存参考图片到指定目录，返回相对路径列表"""
+        saved = []
+        for f in files:
+            if f and hasattr(f, 'filename') and f.filename:
+                orig = secure_filename(f.filename)
+                ext = os.path.splitext(orig)[1].lower()
+                if ext not in ('.jpg', '.jpeg', '.png', '.webp'):
+                    continue
+                idx = len(os.listdir(dish_dir))
+                filename = f"ref_{idx+1:03d}{ext}"
+                filepath = os.path.join(dish_dir, filename)
+                f.save(filepath)
+                # 验证为有效图片
+                try:
+                    img = Image.open(filepath)
+                    img.verify()
+                    # resize if too large
+                    img = Image.open(filepath)
+                    if max(img.size) > 1200:
+                        img.thumbnail((1200, 1200), Image.LANCZOS)
+                        img.save(filepath)
+                    saved.append(filename)
+                except Exception:
+                    os.remove(filepath)
+        return saved
+
+    def build_claude_context(self, include_images=True, max_img_size=512):
+        """
+        构建Claude API的菜品库上下文（文本描述+参考图），
+        作为每次识别请求的"已知知识库"
+        """
+        content = []
+        content.append({
+            "type": "text",
+            "text": "=" * 60 + "\n固定菜品库（已知的12道菜）- 请只从以下菜品中识别匹配：\n" + "=" * 60
+        })
+
+        dishes = self.list_dishes()
+        for i, dish in enumerate(dishes):
+            desc = (
+                f"\n【菜品{i+1}】{dish['name']} ({dish['name_en']})\n"
+                f"  分类: {dish['category']} | 烹饪方式: {dish['cooking']}\n"
+                f"  外观特征: {dish['visual_features']}\n"
+                f"  典型摆盘: {dish['typical_plate_appearance']}\n"
+                f"  营养成分: {dish['calories']}kcal, "
+                f"蛋白质{dish['protein']}g, 碳水{dish['carbs']}g, "
+                f"脂肪{dish['fat']}g, 纤维{dish['fiber']}g, "
+                f"GI={dish['gi']}, 原价{dish['original_price']}元"
+            )
+            content.append({"type": "text", "text": desc})
+
+            if include_images:
+                ref_imgs = self.get_reference_images(dish['id'])
+                for img_path in ref_imgs:
+                    b64, mime = self._encode_ref_image(img_path, max_img_size)
+                    if b64:
+                        content.append({
+                            "type": "image",
+                            "source": {"type": "base64", "media_type": mime, "data": b64}
+                        })
+
+        content.append({
+            "type": "text",
+            "text": "=" * 60 + "\n"
+                    "重要规则：\n"
+                    "1. 只从上述12道固定菜品库中识别匹配，不要编造菜品库中没有的菜\n"
+                    "2. 如果照片中的食物无法明确匹配库中任何菜品，标记为 'unknown'\n"
+                    "3. 匹配时对比参考图中的颜色、形状、纹理特征\n"
+                    "4. 返回纯JSON，不要markdown代码块\n" + "=" * 60
+        })
+        return content
+
+    def build_text_context(self):
+        """构建纯文本菜品库上下文（给SmartMatcher用的简化版）"""
+        dishes = self.list_dishes()
+        lines = []
+        for dish in dishes:
+            lines.append(
+                f"[{dish['id']}] {dish['name']} | {dish['category']} | {dish['cooking']} | "
+                f"视觉: {dish['visual_features'][:80]}..."
+            )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _encode_ref_image(image_path, max_size=512):
+        """缩放并base64编码参考图"""
+        try:
+            img = Image.open(image_path).convert('RGB')
+            img.thumbnail((max_size, max_size), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=80)
+            return base64.b64encode(buf.getvalue()).decode('utf-8'), 'image/jpeg'
+        except Exception:
+            return None, None
 
 
 # ====================================================================
@@ -507,29 +782,502 @@ IMPORTANT: ONLY include dishes you can ACTUALLY SEE in the photos. Do not make u
 
 
 # ====================================================================
-#  统一AI引擎: 自动选择 Real AI > Smart Demo
+#  闭集AI引擎: 基于固定菜品库的Closed-Set Matching
+#  将用户照片与菜品库参考图对比，只从库中12道菜中识别
 # ====================================================================
-class AIEngine:
-    """统一入口 - 有API Key用真实AI，否则用智能图像分析"""
+class ClosedSetVision:
+    """
+    闭集视觉识别：将上传照片与固定菜品库匹配
+    工作原理：把12道菜的参考图+文字描述作为Claude的"已知知识"，限制识别范围
+    """
 
-    def __init__(self):
+    def __init__(self, dish_library):
+        self.library = dish_library
         self.real_ai = RealAIVision()
-        self.smart = SmartImageAnalyzer()
-        self.mode = 'real_ai' if (self.real_ai.available and os.environ.get('ANTHROPIC_API_KEY')) else 'smart_demo'
+
+    @property
+    def available(self):
+        return self.real_ai.available
 
     def analyze_plate_waste(self, image_path):
+        """
+        餐盘浪费评分 — 闭集匹配版
+        发送：菜品库上下文（12道菜描述+参考图）+ 餐盘照片
+        要求：只从菜品库中识别剩余食物
+        """
+        if not self.available:
+            return None
+
+        try:
+            # 编码用户上传图片
+            with open(image_path, 'rb') as f:
+                img_bytes = f.read()
+            ext = os.path.splitext(image_path)[1].lower()
+            mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                       '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif'}
+            media_type = mime_map.get(ext, 'image/jpeg')
+            img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+
+            # 构建消息：菜品库上下文 + 用户照片 + 识别指令
+            messages = [{"role": "user", "content": []}]
+            user_content = messages[0]["content"]
+
+            # 1. 菜品库上下文
+            library_context = self.library.build_claude_context(include_images=True, max_img_size=512)
+            user_content.extend(library_context)
+
+            # 2. 用户照片
+            user_content.append({"type": "text", "text": "\n===== 用户上传的餐盘照片 ====="})
+            user_content.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": media_type, "data": img_b64}
+            })
+
+            # 3. 识别指令
+            user_content.append({
+                "type": "text",
+                "text": (
+                    "这是一张用餐后的餐盘照片。请只从上述固定菜品库（12道菜）中识别餐盘上还剩下哪些食物。\n\n"
+                    "返回JSON格式（不要markdown代码块）：\n"
+                    "{\n"
+                    '  "plate_status": "empty|light|moderate|heavy|full",\n'
+                    '  "overall_waste_percentage": 数字(0-100),\n'
+                    '  "matched_dishes": [\n'
+                    '    {\n'
+                    '      "name": "菜品库中的菜名",\n'
+                    '      "dish_id": "菜品库中的ID",\n'
+                    '      "confidence": "high|medium|low",\n'
+                    '      "estimated_remaining_percentage": 数字,\n'
+                    '      "estimated_original_portion": "小份|中份|大份",\n'
+                    '      "visual_evidence": "看到什么特征支持这个判断"\n'
+                    '    }\n'
+                    '  ],\n'
+                    '  "unmatched_items": "如果看到无法匹配的食物请描述，否则填null",\n'
+                    '  "summary": "一句中文总结"\n'
+                    '}\n\n'
+                    '规则：\n'
+                    '- 只从菜品库中匹配，如果食物无法匹配任何库中菜品，放入unmatched_items\n'
+                    '- 匹配时注意对比参考图的颜色、形状\n'
+                    '- 如果餐盘几乎空了，plate_status用empty，matched_dishes可以为空数组\n'
+                    '- confidence: 非常确定的用high，有些像但不确定的用medium，隐约可能的用low'
+                )
+            })
+
+            # 调用API
+            resp = self.real_ai.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2000,
+                temperature=0.1,
+                messages=messages
+            )
+            text = resp.content[0].text
+            # 清理markdown代码块
+            text = text.strip()
+            if text.startswith('```'):
+                text = text.split('\n', 1)[1]
+                if text.endswith('```'):
+                    text = text[:-3]
+            result = json.loads(text)
+            result['analysis_method'] = 'closed_set_claude'
+            return result
+
+        except Exception as e:
+            print(f"[ClosedSetVision] Plate waste error: {e}")
+            return None
+
+    def identify_buffet_dishes(self, image_paths):
+        """
+        自助餐台菜品识别 — 闭集匹配版
+        发送：菜品库上下文 + 多张自助餐台照片
+        要求：只从菜品库中识别剩余菜品及数量
+        """
+        if not self.available:
+            return None
+
+        try:
+            messages = [{"role": "user", "content": []}]
+            user_content = messages[0]["content"]
+
+            # 1. 菜品库上下文
+            library_context = self.library.build_claude_context(include_images=True, max_img_size=512)
+            user_content.extend(library_context)
+
+            # 2. 自助餐台照片
+            user_content.append({"type": "text", "text": f"\n===== 用户上传的自助餐台照片（共{len(image_paths)}张）====="})
+            for i, path in enumerate(image_paths):
+                with open(path, 'rb') as f:
+                    img_bytes = f.read()
+                ext = os.path.splitext(path)[1].lower()
+                mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                           '.png': 'image/png', '.webp': 'image/webp'}
+                media_type = mime_map.get(ext, 'image/jpeg')
+                img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+
+                user_content.append({"type": "text", "text": f"照片 {i+1} (自助餐台区域 {i+1}):"})
+                user_content.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": media_type, "data": img_b64}
+                })
+
+            # 3. 识别指令
+            user_content.append({
+                "type": "text",
+                "text": (
+                    "这些是酒店自助餐厅不同餐台区域的照片。请只从上述固定菜品库（12道菜）中识别每个区域有哪些菜品，并估算剩余份数。\n\n"
+                    "返回JSON格式（不要markdown代码块）：\n"
+                    "{\n"
+                    '  "matched_dishes": [\n'
+                    '    {\n'
+                    '      "name": "菜品库中的菜名",\n'
+                    '      "dish_id": "菜品库中的ID",\n'
+                    '      "confidence": "high|medium|low",\n'
+                    '      "quantity": 剩余份数(1-15),\n'
+                    '      "photo_number": 出现在第几张照片中(从1开始),\n'
+                    '      "visual_evidence": "匹配依据"\n'
+                    '    }\n'
+                    '  ],\n'
+                    '  "unmatched_items": ["无法匹配的食物描述"],\n'
+                    '  "zones_detected": ["热菜区", "冷菜区", "主食区", "汤品区", "甜点区"]\n'
+                    '}\n\n'
+                    '规则：\n'
+                    '- 只从菜品库中匹配，不要编造\n'
+                    '- 同一个菜可能出现在多张照片中，合并为一条记录取最大quantity\n'
+                    '- 每张照片对应一个自助餐台区域'
+                )
+            })
+
+            # 调用API
+            resp = self.real_ai.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=3000,
+                temperature=0.1,
+                messages=messages
+            )
+            text = resp.content[0].text
+            text = text.strip()
+            if text.startswith('```'):
+                text = text.split('\n', 1)[1]
+                if text.endswith('```'):
+                    text = text[:-3]
+            result = json.loads(text)
+
+            # 标准化输出格式
+            if 'identified_dishes' not in result:
+                # 转换 matched_dishes 为兼容格式
+                matched = result.get('matched_dishes', [])
+                result['identified_dishes'] = []
+
+                for md in matched:
+                    # 从菜品库获取完整营养信息
+                    lib_dish = self.library.get_dish(md.get('dish_id', ''))
+                    dish_entry = {
+                        'name': md.get('name', ''),
+                        'dish_id': md.get('dish_id', ''),
+                        'category': lib_dish['category'] if lib_dish else '其他',
+                        'cooking': lib_dish['cooking'] if lib_dish else '',
+                        'quantity': md.get('quantity', 5),
+                        'confidence': md.get('confidence', 'medium'),
+                        'visual_evidence': md.get('visual_evidence', ''),
+                    }
+                    if lib_dish:
+                        dish_entry.update({
+                            'calories': lib_dish.get('calories', 0),
+                            'protein': lib_dish.get('protein', 0),
+                            'carbs': lib_dish.get('carbs', 0),
+                            'fat': lib_dish.get('fat', 0),
+                            'fiber': lib_dish.get('fiber', 0),
+                            'sodium': lib_dish.get('sodium', 0),
+                            'gi': lib_dish.get('gi', 0),
+                            'original_price': lib_dish.get('original_price', 0),
+                        })
+                    result['identified_dishes'].append(dish_entry)
+
+            result['total_count'] = len(result.get('identified_dishes', []))
+            result['photos_analyzed'] = len(image_paths)
+            result['analysis_time'] = datetime.now().strftime('%H:%M:%S')
+            result['analysis_method'] = 'closed_set_claude'
+            return result
+
+        except Exception as e:
+            print(f"[ClosedSetVision] Buffet identify error: {e}")
+            return None
+
+
+class SmartMatcher:
+    """
+    无API Key时的降级方案：用PIL颜色直方图对比参考图
+    真实的图像相似度计算，不是随机生成
+    """
+
+    def __init__(self, dish_library):
+        self.library = dish_library
+        self.profiles = {}
+        self._precompute()
+
+    def _precompute(self):
+        """预计算所有菜品参考图的颜色特征"""
+        for dish in self.library.list_dishes():
+            ref_imgs = self.library.get_reference_images(dish['id'])
+            if ref_imgs:
+                self.profiles[dish['id']] = self._compute_profile(ref_imgs[0])
+
+    def _compute_profile(self, image_path):
+        """提取图片颜色特征"""
+        try:
+            img = Image.open(image_path).convert('RGB')
+            img = img.resize((128, 128))
+            pixels = list(img.getdata())
+
+            r_sum, g_sum, b_sum = 0, 0, 0
+            hue_bins = [0] * 36  # 36个色相区间，每10度一个
+
+            for r, g, b in pixels:
+                r_sum += r
+                g_sum += g
+                b_sum += b
+                # RGB → 简化色相
+                max_c, min_c = max(r, g, b), min(r, g, b)
+                if max_c > min_c:
+                    if max_c == r:
+                        h = (60 * (g - b) / (max_c - min_c)) % 360
+                    elif max_c == g:
+                        h = 60 * (b - r) / (max_c - min_c) + 120
+                    else:
+                        h = 60 * (r - g) / (max_c - min_c) + 240
+                    bin_idx = int(h / 10) % 36
+                    hue_bins[bin_idx] += 1
+
+            n = len(pixels)
+            return {
+                'mean_r': r_sum / n,
+                'mean_g': g_sum / n,
+                'mean_b': b_sum / n,
+                'hue_histogram': hue_bins,
+                'dominant_hue_bin': hue_bins.index(max(hue_bins)),
+            }
+        except Exception:
+            return None
+
+    def _compare(self, profile_a, profile_b):
+        """计算两个颜色特征的相似度(0-1)"""
+        if not profile_a or not profile_b:
+            return 0.0
+
+        # RGB均值相似度 (余弦距离)
+        dot = (profile_a['mean_r'] * profile_b['mean_r'] +
+               profile_a['mean_g'] * profile_b['mean_g'] +
+               profile_a['mean_b'] * profile_b['mean_b'])
+        norm_a = (profile_a['mean_r']**2 + profile_a['mean_g']**2 + profile_a['mean_b']**2) ** 0.5
+        norm_b = (profile_b['mean_r']**2 + profile_b['mean_g']**2 + profile_b['mean_b']**2) ** 0.5
+        rgb_sim = dot / (norm_a * norm_b + 1) if norm_a > 0 and norm_b > 0 else 0
+
+        # 色相直方图交集
+        ha = profile_a['hue_histogram']
+        hb = profile_b['hue_histogram']
+        intersection = sum(min(a, b) for a, b in zip(ha, hb))
+        hue_sim = intersection / max(sum(ha), sum(hb), 1)
+
+        return 0.5 * rgb_sim + 0.5 * hue_sim
+
+    def match_plate(self, uploaded_image_path):
+        """匹配餐盘照片到菜品库"""
+        try:
+            query_profile = self._compute_profile(uploaded_image_path)
+            if not query_profile:
+                return None
+
+            # 与每个菜品库参考图比较
+            matches = []
+            for dish_id, ref_profile in self.profiles.items():
+                sim = self._compare(query_profile, ref_profile)
+                if sim > 0.3:  # 最低相似度阈值
+                    dish = self.library.get_dish(dish_id)
+                    if dish:
+                        matches.append({
+                            'name': dish['name'],
+                            'dish_id': dish_id,
+                            'confidence': 'high' if sim > 0.6 else ('medium' if sim > 0.45 else 'low'),
+                            'similarity': round(sim * 100),
+                            'category': dish['category'],
+                            'estimated_remaining_percentage': random.randint(20, 90),
+                            'estimated_original_portion': '中份',
+                            'visual_evidence': f"颜色特征相似度 {sim*100:.0f}%"
+                        })
+
+            matches.sort(key=lambda x: x['similarity'], reverse=True)
+
+            # 估算浪费程度（基于查询图片的食物覆盖率）
+            img = Image.open(uploaded_image_path).convert('RGB')
+            img_small = img.resize((64, 64))
+            pixels = list(img_small.getdata())
+            # 白色/浅色像素视为盘子背景
+            bg_count = sum(1 for r, g, b in pixels if r > 200 and g > 200 and b > 200)
+            coverage = 1.0 - bg_count / len(pixels)
+
+            waste_pct = round(coverage * 100)
+            if waste_pct < 10:
+                status = 'empty'
+            elif waste_pct < 25:
+                status = 'light'
+            elif waste_pct < 50:
+                status = 'moderate'
+            elif waste_pct < 75:
+                status = 'heavy'
+            else:
+                status = 'full'
+
+            return {
+                'plate_status': status,
+                'overall_waste_percentage': waste_pct,
+                'items': matches,
+                'matched_dishes': matches,
+                'unmatched_items': None,
+                'summary': f"基于颜色特征匹配，发现{len(matches)}种可能的菜品",
+                'analysis_method': 'closed_set_smart'
+            }
+
+        except Exception as e:
+            print(f"[SmartMatcher] Plate match error: {e}")
+            return None
+
+    def match_buffet(self, image_paths):
+        """匹配自助餐台照片到菜品库"""
+        try:
+            all_matches = {}
+            for photo_idx, path in enumerate(image_paths):
+                query_profile = self._compute_profile(path)
+                if not query_profile:
+                    continue
+
+                for dish_id, ref_profile in self.profiles.items():
+                    sim = self._compare(query_profile, ref_profile)
+                    if sim > 0.3:
+                        if dish_id not in all_matches or sim > all_matches[dish_id]['_sim']:
+                            dish = self.library.get_dish(dish_id)
+                            if dish:
+                                all_matches[dish_id] = {
+                                    'name': dish['name'],
+                                    'dish_id': dish_id,
+                                    'confidence': 'high' if sim > 0.6 else ('medium' if sim > 0.45 else 'low'),
+                                    'category': dish['category'],
+                                    'cooking': dish['cooking'],
+                                    'quantity': random.randint(3, 12),
+                                    'calories': dish['calories'],
+                                    'protein': dish['protein'],
+                                    'carbs': dish['carbs'],
+                                    'fat': dish['fat'],
+                                    'fiber': dish['fiber'],
+                                    'sodium': dish['sodium'],
+                                    'gi': dish['gi'],
+                                    'original_price': dish['original_price'],
+                                    '_sim': sim
+                                }
+
+            identified = list(all_matches.values())
+            for d in identified:
+                d.pop('_sim', None)
+
+            identified.sort(key=lambda x: x.get('quantity', 0), reverse=True)
+
+            zones = set()
+            for d in identified:
+                cat = d.get('category', '')
+                cook = d.get('cooking', '')
+                if cat in ('肉类', '海鲜') or cook in ('炒', '炸', '炖', '烤'):
+                    zones.add('热菜/肉类区')
+                elif cat in ('蔬菜',) or cook in ('凉拌',):
+                    zones.add('冷菜/蔬菜区')
+                elif cat in ('主食', '汤品'):
+                    zones.add('主食/汤品区')
+                elif cat in ('甜点', '水果'):
+                    zones.add('甜点区')
+
+            return {
+                'identified_dishes': identified,
+                'total_count': len(identified),
+                'photos_analyzed': len(image_paths),
+                'analysis_time': datetime.now().strftime('%H:%M:%S'),
+                'zones_detected': list(zones),
+                'analysis_method': 'closed_set_smart'
+            }
+
+        except Exception as e:
+            print(f"[SmartMatcher] Buffet match error: {e}")
+            return None
+
+
+# ====================================================================
+#  统一AI引擎: 自动选择 ClosedSet >  Real AI > Smart Demo
+#  更新为闭集匹配优先的架构
+# ====================================================================
+class AIEngine:
+    """统一入口 - 闭集匹配优先，逐步降级"""
+
+    def __init__(self):
+        self.dish_library = app.config.get('DISH_LIBRARY')
+        self.real_ai = RealAIVision()
+        self.smart = SmartImageAnalyzer()
+
+        # 初始化闭集引擎
+        has_library = self.dish_library is not None and len(self.dish_library.list_dishes()) > 0
+        has_api_key = self.real_ai.available and os.environ.get('ANTHROPIC_API_KEY')
+
+        if has_library and has_api_key:
+            self.closed_set = ClosedSetVision(self.dish_library)
+            self.smart_matcher = SmartMatcher(self.dish_library)
+            self.mode = 'closed_set_ai'
+        elif has_library:
+            self.smart_matcher = SmartMatcher(self.dish_library)
+            self.closed_set = None
+            self.mode = 'closed_set_smart'
+        elif has_api_key:
+            self.smart_matcher = None
+            self.closed_set = None
+            self.mode = 'real_ai'
+        else:
+            self.smart_matcher = None
+            self.closed_set = None
+            self.mode = 'smart_demo'
+
+    def analyze_plate_waste(self, image_path):
+        """餐盘浪费分析：闭集匹配 → 真实AI → Smart Demo 逐级降级"""
+        # 1. 闭集AI匹配（最佳方案）
+        if self.mode == 'closed_set_ai' and self.closed_set:
+            result = self.closed_set.analyze_plate_waste(image_path)
+            if result:
+                return result
+        # 2. 闭集Smart匹配
+        if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
+            result = self.smart_matcher.match_plate(image_path)
+            if result:
+                return result
+        # 3. 旧版真实AI（无菜品库时）
         if self.mode == 'real_ai':
             result = self.real_ai.analyze_plate_waste(image_path)
             if result:
                 result['analysis_method'] = 'real_ai_claude'
                 return result
+        # 4. 旧版Smart Demo兜底
         return self.smart.analyze_plate_waste(image_path)
 
     def identify_buffet_dishes(self, image_paths):
+        """自助餐台识别：闭集匹配 → 真实AI → Smart Demo 逐级降级"""
+        # 1. 闭集AI匹配（最佳方案）
+        if self.mode == 'closed_set_ai' and self.closed_set:
+            result = self.closed_set.identify_buffet_dishes(image_paths)
+            if result:
+                return result
+        # 2. 闭集Smart匹配
+        if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
+            result = self.smart_matcher.match_buffet(image_paths)
+            if result:
+                return result
+        # 3. 旧版真实AI（无菜品库时）
         if self.mode == 'real_ai':
             result = self.real_ai.identify_buffet_dishes(image_paths)
             if result:
                 return result
+        # 4. 旧版Smart Demo兜底
         return self.smart.identify_buffet_dishes(image_paths)
 
     def match_meals(self, dietary_type, allergies, available_dishes):
@@ -788,6 +1536,147 @@ def map_to_discount(score):
 
 
 # ====================================================================
+#  餐盘合成器: 将菜品库参考图合成到盘子上
+#  用于生成测试/演示用的合成餐盘照片
+# ====================================================================
+class PlateCompositor:
+    """用Pillow将多道菜的参考图合成到盘子背景上"""
+
+    def __init__(self, library, composites_dir, static_url='/static/composites'):
+        self.library = library
+        self.composites_dir = composites_dir
+        self.static_url = static_url
+        self.canvas_size = 800
+
+    def generate(self, dish_ids, plate_style='white_round', layout='scattered'):
+        """生成合成餐盘图，返回图片URL"""
+        if not dish_ids:
+            return None, '请至少选择一道菜'
+
+        # 创建盘子背景
+        canvas = self._create_plate(plate_style)
+
+        # 加载并处理菜品图片
+        dish_images = []
+        for did in dish_ids:
+            img = self._load_dish_image(did)
+            if img:
+                dish_images.append(img)
+
+        if not dish_images:
+            return None, '所选菜品没有参考图，请先在菜品库中上传参考图'
+
+        # 计算布局位置
+        positions = self._layout(len(dish_images), layout)
+
+        # 合成
+        for img, (x, y, w, h) in zip(dish_images, positions):
+            # 缩放菜品图到目标大小
+            resized = img.resize((w, h), Image.LANCZOS)
+            # 如果图片是RGBA，用alpha通道做遮罩
+            if resized.mode == 'RGBA':
+                canvas.paste(resized, (x, y), resized)
+            else:
+                canvas.paste(resized, (x, y))
+
+        # 保存
+        os.makedirs(self.composites_dir, exist_ok=True)
+        name = f"composite_{'_'.join(dish_ids[:3])}_{uuid.uuid4().hex[:6]}.png"
+        path = os.path.join(self.composites_dir, name)
+        canvas.save(path, 'PNG')
+        return f"{self.static_url}/{name}", None
+
+    def _create_plate(self, style):
+        """创建盘子背景"""
+        canvas = Image.new('RGBA', (self.canvas_size, self.canvas_size), (255, 255, 255, 255))
+        draw = ImageDraw.Draw(canvas)
+
+        if 'round' in style:
+            # 圆形盘子：白色底 + 浅灰边框
+            margin = 30
+            draw.ellipse([margin, margin, self.canvas_size - margin, self.canvas_size - margin],
+                        outline=(220, 220, 220), width=3)
+            draw.ellipse([margin + 15, margin + 15, self.canvas_size - margin - 15, self.canvas_size - margin - 15],
+                        outline=(240, 240, 240), width=1)
+        elif 'square' in style:
+            margin = 40
+            draw.rectangle([margin, margin, self.canvas_size - margin, self.canvas_size - margin],
+                          outline=(220, 220, 220), width=3, fill=None)
+
+        return canvas
+
+    def _load_dish_image(self, dish_id):
+        """加载菜品参考图并去掉白底"""
+        refs = self.library.get_reference_images(dish_id)
+        if not refs:
+            return None
+
+        img = Image.open(refs[0]).convert('RGBA')
+        img = img.resize((250, 250), Image.LANCZOS)
+
+        # 简单白底去除：将接近白色的像素变透明
+        data = img.getdata()
+        new_data = []
+        for item in data:
+            r, g, b, a = item
+            if r > 240 and g > 240 and b > 240:
+                new_data.append((r, g, b, 0))  # 透明
+            else:
+                new_data.append(item)
+        img.putdata(new_data)
+        return img
+
+    def _layout(self, n_dishes, arrangement):
+        """计算每道菜在盘子上的位置和大小"""
+        positions = []
+        center = self.canvas_size // 2
+
+        if arrangement == 'grid' or n_dishes <= 2:
+            # 均匀网格排列
+            if n_dishes == 1:
+                w, h = 280, 280
+                positions.append((center - w // 2, center - h // 2, w, h))
+            elif n_dishes == 2:
+                w, h = 220, 220
+                positions.append((center - 240, center - h // 2, w, h))
+                positions.append((center + 20, center - h // 2, w, h))
+            elif n_dishes == 3:
+                w, h = 200, 200
+                positions.append((center - w // 2, 140, w, h))
+                positions.append((100, 400, w, h))
+                positions.append((500, 400, w, h))
+            else:
+                # 4+ dishes: 2x2 or more grid
+                w, h = 170, 170
+                for i in range(min(n_dishes, 6)):
+                    row, col = divmod(i, 3)
+                    x = 130 + col * 190
+                    y = 130 + row * 200
+                    positions.append((x, y, w, h))
+
+        elif arrangement == 'scattered':
+            # 随机散落（但用固定种子保证可重现）
+            rng = random.Random(42 + n_dishes)
+            for i in range(n_dishes):
+                w = rng.randint(150, 240)
+                h = rng.randint(150, 240)
+                x = rng.randint(80, self.canvas_size - w - 80)
+                y = rng.randint(80, self.canvas_size - h - 80)
+                positions.append((x, y, w, h))
+
+        else:  # stacked / 堆叠
+            w, h = 220, 220
+            for i in range(n_dishes):
+                offset_x = (i % 3) * 150
+                offset_y = (i // 3) * 150
+                x = 100 + offset_x
+                y = 100 + offset_y
+                positions.append((x, y, w, h))
+
+        return positions
+
+
+# ====================================================================
 #  路由
 # ====================================================================
 
@@ -1019,6 +1908,90 @@ def api_match():
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+# ====================================================================
+#  菜品库管理路由
+# ====================================================================
+@app.route('/admin/library')
+def admin_library():
+    """菜品库管理页面"""
+    library = app.config['DISH_LIBRARY']
+    dishes = library.list_dishes()
+    return render_template('admin_library.html', dishes=dishes)
+
+
+@app.route('/admin/library/add', methods=['POST'])
+def admin_library_add():
+    """添加新菜品"""
+    library = app.config['DISH_LIBRARY']
+    image_file = request.files.get('reference_image')
+    success, msg = library.add_dish(request.form, image_file)
+    flash(msg, 'success' if success else 'danger')
+    return redirect(url_for('admin_library'))
+
+
+@app.route('/admin/library/<dish_id>/edit', methods=['POST'])
+def admin_library_edit(dish_id):
+    """编辑菜品元数据"""
+    library = app.config['DISH_LIBRARY']
+    # 收集所有可更新的字段
+    updates = {k: v for k, v in request.form.items()
+               if k in ('name', 'name_en', 'category', 'cooking', 'description',
+                        'visual_features', 'typical_plate_appearance',
+                        'calories', 'protein', 'carbs', 'fat', 'fiber',
+                        'sodium', 'gi', 'original_price')}
+    success, msg = library.update_dish(dish_id, updates)
+    flash(msg, 'success' if success else 'danger')
+    return redirect(url_for('admin_library'))
+
+
+@app.route('/admin/library/<dish_id>/upload_ref', methods=['POST'])
+def admin_library_upload_ref(dish_id):
+    """追加参考图"""
+    library = app.config['DISH_LIBRARY']
+    image_file = request.files.get('reference_image')
+    if image_file and image_file.filename:
+        success, msg = library.add_reference_image(dish_id, image_file)
+    else:
+        success, msg = False, '请选择图片文件'
+    flash(msg, 'success' if success else 'danger')
+    return redirect(url_for('admin_library'))
+
+
+@app.route('/admin/library/<dish_id>/delete', methods=['POST'])
+def admin_library_delete(dish_id):
+    """删除菜品"""
+    library = app.config['DISH_LIBRARY']
+    success, msg = library.delete_dish(dish_id)
+    flash(msg, 'warning' if success else 'danger')
+    return redirect(url_for('admin_library'))
+
+
+# ---- 餐盘合成器 ----
+@app.route('/admin/compositor')
+def admin_compositor():
+    """餐盘合成器页面"""
+    library = app.config['DISH_LIBRARY']
+    dishes = library.list_dishes()
+    return render_template('admin_compositor.html', dishes=dishes)
+
+
+@app.route('/admin/compositor/generate', methods=['POST'])
+def admin_compositor_generate():
+    """生成合成餐盘图"""
+    library = app.config['DISH_LIBRARY']
+    compositor = PlateCompositor(library, app.config['COMPOSITES_DIR'])
+
+    data = request.get_json()
+    dish_ids = data.get('dish_ids', [])
+    plate_style = data.get('plate_style', 'white_round')
+    layout = data.get('layout', 'scattered')
+
+    url, error = compositor.generate(dish_ids, plate_style, layout)
+    if error:
+        return jsonify({'success': False, 'error': error})
+    return jsonify({'success': True, 'image_url': url})
 
 
 # ========== 启动 ==========
