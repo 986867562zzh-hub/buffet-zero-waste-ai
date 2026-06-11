@@ -53,10 +53,14 @@ app.config['COMPOSITES_DIR'] = os.path.join(os.path.dirname(__file__), 'static',
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['COMPOSITES_DIR'], exist_ok=True)
 
-# 初始化菜品库
-dish_library_path = os.path.join(app.config['DATA_FOLDER'], 'dish_library.json')
-DISH_LIBRARY = DishLibrary(dish_library_path, app.config['REFERENCE_DIR'])
-app.config['DISH_LIBRARY'] = DISH_LIBRARY
+
+# 延迟初始化菜品库（DishLibrary类定义在后面，等首次使用时才创建）
+def get_dish_library():
+    """获取菜品库单例（延迟初始化）"""
+    if 'DISH_LIBRARY' not in app.config:
+        dish_library_path = os.path.join(app.config['DATA_FOLDER'], 'dish_library.json')
+        app.config['DISH_LIBRARY'] = DishLibrary(dish_library_path, app.config['REFERENCE_DIR'])
+    return app.config['DISH_LIBRARY']
 
 # ========== 数据加载 ==========
 def load_dishes():
@@ -1214,7 +1218,7 @@ class AIEngine:
     """统一入口 - 闭集匹配优先，逐步降级"""
 
     def __init__(self):
-        self.dish_library = app.config.get('DISH_LIBRARY')
+        self.dish_library = get_dish_library()
         self.real_ai = RealAIVision()
         self.smart = SmartImageAnalyzer()
 
@@ -1916,7 +1920,7 @@ def uploaded_file(filename):
 @app.route('/admin/library')
 def admin_library():
     """菜品库管理页面"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     dishes = library.list_dishes()
     return render_template('admin_library.html', dishes=dishes)
 
@@ -1924,7 +1928,7 @@ def admin_library():
 @app.route('/admin/library/add', methods=['POST'])
 def admin_library_add():
     """添加新菜品"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     image_file = request.files.get('reference_image')
     success, msg = library.add_dish(request.form, image_file)
     flash(msg, 'success' if success else 'danger')
@@ -1934,7 +1938,7 @@ def admin_library_add():
 @app.route('/admin/library/<dish_id>/edit', methods=['POST'])
 def admin_library_edit(dish_id):
     """编辑菜品元数据"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     # 收集所有可更新的字段
     updates = {k: v for k, v in request.form.items()
                if k in ('name', 'name_en', 'category', 'cooking', 'description',
@@ -1949,7 +1953,7 @@ def admin_library_edit(dish_id):
 @app.route('/admin/library/<dish_id>/upload_ref', methods=['POST'])
 def admin_library_upload_ref(dish_id):
     """追加参考图"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     image_file = request.files.get('reference_image')
     if image_file and image_file.filename:
         success, msg = library.add_reference_image(dish_id, image_file)
@@ -1962,7 +1966,7 @@ def admin_library_upload_ref(dish_id):
 @app.route('/admin/library/<dish_id>/delete', methods=['POST'])
 def admin_library_delete(dish_id):
     """删除菜品"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     success, msg = library.delete_dish(dish_id)
     flash(msg, 'warning' if success else 'danger')
     return redirect(url_for('admin_library'))
@@ -1972,7 +1976,7 @@ def admin_library_delete(dish_id):
 @app.route('/admin/compositor')
 def admin_compositor():
     """餐盘合成器页面"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     dishes = library.list_dishes()
     return render_template('admin_compositor.html', dishes=dishes)
 
@@ -1980,7 +1984,7 @@ def admin_compositor():
 @app.route('/admin/compositor/generate', methods=['POST'])
 def admin_compositor_generate():
     """生成合成餐盘图"""
-    library = app.config['DISH_LIBRARY']
+    library = get_dish_library()
     compositor = PlateCompositor(library, app.config['COMPOSITES_DIR'])
 
     data = request.get_json()
