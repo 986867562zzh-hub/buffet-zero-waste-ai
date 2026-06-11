@@ -1,0 +1,24 @@
+{
+  "dishes": [
+    {"id": 1, "name": "蒜蓉西兰花", "category": "蔬菜", "cooking": "清炒", "calories": 68, "protein": 4.5, "carbs": 7.2, "fat": 3.1, "fiber": 3.6, "sodium": 180, "gi": 15, "original_price": 28, "quantity": 5},
+    {"id": 2, "name": "黑椒牛柳", "category": "肉类", "cooking": "炒", "calories": 240, "protein": 28.0, "carbs": 5.0, "fat": 13.0, "fiber": 0.5, "sodium": 420, "gi": 0, "original_price": 48, "quantity": 3},
+    {"id": 3, "name": "清蒸鲈鱼", "category": "海鲜", "cooking": "蒸", "calories": 130, "protein": 22.0, "carbs": 0.5, "fat": 4.5, "fiber": 0, "sodium": 120, "gi": 0, "original_price": 58, "quantity": 2},
+    {"id": 4, "name": "扬州炒饭", "category": "主食", "cooking": "炒", "calories": 320, "protein": 8.5, "carbs": 50.0, "fat": 10.0, "fiber": 1.2, "sodium": 380, "gi": 70, "original_price": 22, "quantity": 8},
+    {"id": 5, "name": "白灼虾", "category": "海鲜", "cooking": "煮", "calories": 99, "protein": 20.0, "carbs": 0.2, "fat": 1.4, "fiber": 0, "sodium": 160, "gi": 0, "original_price": 52, "quantity": 4},
+    {"id": 6, "name": "番茄蛋花汤", "category": "汤品", "cooking": "煮", "calories": 55, "protein": 3.2, "carbs": 4.5, "fat": 2.8, "fiber": 0.8, "sodium": 280, "gi": 30, "original_price": 18, "quantity": 6},
+    {"id": 7, "name": "烤鸡胸肉", "category": "肉类", "cooking": "烤", "calories": 165, "protein": 31.0, "carbs": 0, "fat": 3.6, "fiber": 0, "sodium": 220, "gi": 0, "original_price": 38, "quantity": 4},
+    {"id": 8, "name": "凉拌黄瓜", "category": "蔬菜", "cooking": "凉拌", "calories": 35, "protein": 1.5, "carbs": 5.5, "fat": 0.8, "fiber": 1.8, "sodium": 150, "gi": 15, "original_price": 15, "quantity": 7},
+    {"id": 9, "name": "红烧肉", "category": "肉类", "cooking": "炖", "calories": 380, "protein": 15.0, "carbs": 8.0, "fat": 32.0, "fiber": 0, "sodium": 550, "gi": 45, "original_price": 42, "quantity": 3},
+    {"id": 10, "name": "蒸红薯", "category": "主食", "cooking": "蒸", "calories": 130, "protein": 2.0, "carbs": 30.0, "fat": 0.3, "fiber": 4.5, "sodium": 5, "gi": 54, "original_price": 12, "quantity": 10},
+    {"id": 11, "name": "水果拼盘", "category": "水果", "cooking": "生食", "calories": 95, "protein": 0.8, "carbs": 22.0, "fat": 0.3, "fiber": 3.5, "sodium": 5, "gi": 50, "original_price": 25, "quantity": 6},
+    {"id": 12, "name": "提拉米苏", "category": "甜点", "cooking": "冷制", "calories": 350, "protein": 5.5, "carbs": 35.0, "fat": 21.0, "fiber": 0.5, "sodium": 120, "gi": 65, "original_price": 32, "quantity": 3},
+    {"id": 13, "name": "香菇菜心", "category": "蔬菜", "cooking": "炒", "calories": 58, "protein": 3.5, "carbs": 8.0, "fat": 1.8, "fiber": 2.8, "sodium": 200, "gi": 20, "original_price": 22, "quantity": 5},
+    {"id": 14, "name": "三文鱼刺身", "category": "海鲜", "cooking": "生食", "calories": 180, "protein": 21.0, "carbs": 0, "fat": 11.0, "fiber": 0, "sodium": 55, "gi": 0, "original_price": 65, "quantity": 2},
+    {"id": 15, "name": "素炒豆腐", "category": "蔬菜", "cooking": "炒", "calories": 125, "protein": 12.0, "carbs": 4.5, "fat": 7.0, "fiber": 1.5, "sodium": 250, "gi": 20, "original_price": 20, "quantity": 6},
+    {"id": 16, "name": "蛋炒饭", "category": "主食", "cooking": "炒", "calories": 290, "protein": 7.5, "carbs": 45.0, "fat": 9.0, "fiber": 1.0, "sodium": 350, "gi": 72, "original_price": 20, "quantity": 7},
+    {"id": 17, "name": "蚝油生菜", "category": "蔬菜", "cooking": "炒", "calories": 42, "protein": 2.0, "carbs": 5.0, "fat": 1.5, "fiber": 1.8, "sodium": 220, "gi": 15, "original_price": 18, "quantity": 6},
+    {"id": 18, "name": "咖喱鸡块", "category": "肉类", "cooking": "炖", "calories": 220, "protein": 24.0, "carbs": 12.0, "fat": 9.0, "fiber": 1.5, "sodium": 480, "gi": 40, "original_price": 35, "quantity": 4},
+    {"id": 19, "name": "紫菜蛋花汤", "category": "汤品", "cooking": "煮", "calories": 40, "protein": 3.0, "carbs": 3.5, "fat": 1.5, "fiber": 0.5, "sodium": 300, "gi": 10, "original_price": 16, "quantity": 5},
+    {"id": 20, "name": "杂粮馒头", "category": "主食", "cooking": "蒸", "calories": 180, "protein": 5.5, "carbs": 36.0, "fat": 1.2, "fiber": 3.8, "sodium": 10, "gi": 55, "original_price": 8, "quantity": 12}
+  ]
+}

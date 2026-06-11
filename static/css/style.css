@@ -1,0 +1,462 @@
+/* ============================================
+   自助餐零废弃智能管理系统 - 自定义样式
+   ============================================ */
+
+/* ---- CSS变量 ---- */
+:root {
+    --primary-green: #2d8a56;
+    --primary-blue: #2563eb;
+    --gradient-green: linear-gradient(135deg, #1a6b3c, #2d8a56);
+    --gradient-blue: linear-gradient(135deg, #1e40af, #3b82f6);
+    --gradient-hero: linear-gradient(135deg, #064e3b 0%, #065f46 30%, #047857 60%, #059669 100%);
+    --gradient-info: linear-gradient(135deg, #1e3a5f, #2563eb);
+    --card-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    --card-hover-shadow: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+/* ---- 导航栏 ---- */
+.bg-gradient-primary {
+    background: var(--gradient-green);
+}
+
+.navbar {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+}
+
+/* ---- Hero区域 ---- */
+.hero-section {
+    background: var(--gradient-hero);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-stats .stat-item {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(5px);
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    min-width: 120px;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+/* ---- 产品卡片 ---- */
+.product-card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-hover-shadow) !important;
+}
+
+.product-img-1 {
+    height: 180px;
+    background: var(--gradient-green);
+}
+
+.product-img-2 {
+    height: 180px;
+    background: var(--gradient-blue);
+}
+
+.feature-list li {
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+}
+
+/* ---- 上传区域 ---- */
+.upload-zone {
+    border: 3px dashed #d1d5db;
+    border-radius: 20px;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-zone:hover {
+    border-color: #2d8a56;
+    background: #f0fdf4;
+}
+
+.upload-zone.dragover {
+    border-color: #2d8a56;
+    background: #dcfce7;
+    transform: scale(1.01);
+}
+
+/* ---- 工作流步骤 ---- */
+.workflow-step .step-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* ---- 评分圆圈 ---- */
+.score-circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: conic-gradient(
+        #2d8a56 0%,
+        #22c55e var(--score),
+        #e5e7eb var(--score)
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.score-inner {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.score-number {
+    line-height: 1;
+    color: #1a6b3c;
+}
+
+.score-unit {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* ---- 星级 ---- */
+.stars i {
+    margin: 0 3px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+}
+
+/* ---- 折扣徽章 ---- */
+.discount-badge {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* ---- 饮食需求选项 ---- */
+.dietary-option {
+    border-radius: 12px !important;
+    transition: all 0.2s ease;
+}
+
+.dietary-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-check:checked + .dietary-option {
+    background: #2563eb !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.btn-check:checked + .dietary-option .text-muted {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+/* ---- 菜品小卡片 ---- */
+.dish-mini-card {
+    transition: all 0.2s ease;
+}
+
+.dish-mini-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+/* ---- 搭配方案 ---- */
+.meal-item-card {
+    transition: all 0.2s ease;
+}
+
+.meal-item-card:hover {
+    background: #f0fdf4 !important;
+    transform: translateX(3px);
+}
+
+/* ---- 营养进度条 ---- */
+.nutrition-bar .progress {
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+/* ---- 技术卡片 ---- */
+.tech-card {
+    transition: all 0.3s ease;
+    border: 1px solid #f3f4f6;
+}
+
+.tech-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-shadow) !important;
+    border-color: #d1d5db;
+}
+
+.tech-card i {
+    transition: transform 0.3s ease;
+}
+
+.tech-card:hover i {
+    transform: scale(1.15);
+}
+
+/* ---- 页脚 ---- */
+.footer {
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ---- 折扣规则卡片 ---- */
+.discount-rule-card {
+    border: 2px solid #f3f4f6;
+    transition: all 0.2s ease;
+}
+
+.discount-rule-card:hover {
+    border-color: #2d8a56;
+    transform: scale(1.02);
+}
+
+/* ---- 响应式调整 ---- */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+    }
+
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+
+    .hero-stats {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .hero-stats .stat-item {
+        min-width: 80px;
+        padding: 0.75rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .score-circle {
+        width: 140px;
+        height: 140px;
+    }
+
+    .score-inner {
+        width: 105px;
+        height: 105px;
+    }
+
+    .score-number {
+        font-size: 2rem;
+    }
+
+    .discount-badge .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* ---- 动画 ---- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+/* ---- 加载状态 ---- */
+#analyzeBtn:disabled,
+#matchBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ---- 进度条 ---- */
+.progress {
+    border-radius: 10px;
+    background: #f3f4f6;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 1s ease;
+}
+
+/* ---- 面包屑 ---- */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+/* ---- 表格 ---- */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 最佳推荐卡片边框 */
+.border-success.border-2 {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e, 0 10px 40px rgba(34, 197, 94, 0.15) !important;
+}
+
+/* 渐变信息背景 */
+.bg-gradient-info {
+    background: var(--gradient-info);
+}
+
+/* ---- 多图上传区域 ---- */
+.multi-upload-zone {
+    border: 3px dashed #dc3545;
+    border-radius: 20px;
+    background: #fff5f5;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 200px;
+}
+
+.multi-upload-zone:hover {
+    border-color: #bb2d3b;
+    background: #ffe8e8;
+}
+
+.multi-upload-zone.dragover {
+    border-color: #bb2d3b;
+    background: #ffd6d6;
+    transform: scale(1.01);
+}
+
+.multi-upload-zone.has-photos {
+    border-style: solid;
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+/* ---- AI识别菜品卡片 ---- */
+.dish-card-identified {
+    transition: all 0.2s ease;
+    border-left: 3px solid #0d6efd !important;
+}
+
+.dish-card-identified:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15) !important;
+    border-left-color: #0a58ca !important;
+}
+
+/* ---- 识别结果容器 ---- */
+#identifiedDishesCard {
+    transition: opacity 0.3s ease;
+}
+
+#dietaryCard {
+    transition: opacity 0.3s ease;
+}
+
+/* ---- 多图预览缩略图 ---- */
+#multiPhotoPreviews img {
+    transition: transform 0.2s ease;
+}
+
+#multiPhotoPreviews img:hover {
+    transform: scale(1.05);
+}
+
+/* ---- 饮食选项（紧凑版） ---- */
+.dietary-option {
+    border-radius: 10px !important;
+    min-height: 85px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- badge 颜色扩展 ---- */
+.badge.bg-pink {
+    background-color: #e83e8c !important;
+}
+
+.badge.bg-teal {
+    background-color: #20c997 !important;
+}

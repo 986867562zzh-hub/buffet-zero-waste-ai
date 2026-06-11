@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}分析结果 - 剩食评分{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">首页</a></li>
+            <li class="breadcrumb-item"><a href="/product1">剩食评分</a></li>
+            <li class="breadcrumb-item active">分析结果</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- 左侧：照片 -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-lg h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0"><i class="fas fa-image me-2 text-success"></i>您的餐盘</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ result.image_url }}" alt="餐盘照片" class="img-fluid rounded-3 shadow-sm" style="max-height:400px;">
+                    <p class="text-muted small mt-2">分析时间：{{ result.timestamp }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：结果 -->
+        <div class="col-lg-7">
+            <!-- 评分卡片 -->
+            <div class="card border-0 shadow-lg mb-3">
+                <div class="card-body p-4 text-center">
+                    <!-- 星级 -->
+                    <div class="stars mb-3">
+                        {% for i in range(5) %}
+                            {% if i < result.discount.stars %}
+                                <i class="fas fa-star fa-2x text-warning"></i>
+                            {% else %}
+                                <i class="far fa-star fa-2x text-muted"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- 评分环形图 -->
+                    <div class="score-circle mx-auto mb-3" style="--score: {{ result.score }}%">
+                        <div class="score-inner">
+                            <span class="score-number display-4 fw-bold">{{ result.score }}</span>
+                            <span class="score-unit">/ 100分</span>
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mb-2">{{ result.discount.level }}</h4>
+                    <p class="text-muted">{{ result.analysis.summary }}</p>
+
+                    <!-- 折扣显示 -->
+                    <div class="discount-badge mx-auto my-3 p-3 rounded-4
+                                {% if result.discount.stars >= 4 %}bg-success text-white
+                                {% elif result.discount.stars == 3 %}bg-info text-white
+                                {% elif result.discount.stars == 2 %}bg-warning
+                                {% else %}bg-danger text-white{% endif %}"
+                         style="max-width: 200px;">
+                        <div class="small">可获得折扣</div>
+                        <div class="display-4 fw-bold">{{ result.discount.discount_text }}</div>
+                    </div>
+                    <p class="fw-bold">{{ result.discount.msg }}</p>
+                </div>
+            </div>
+
+            <!-- 食物分析详情 -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-search me-2 text-primary"></i>AI识别详情</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="text-muted">整体浪费率：</span>
+                        {% set wp = result.analysis.overall_waste_percentage %}
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar {% if wp < 20 %}bg-success{% elif wp < 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 role="progressbar" style="width: {{ wp }}%;"
+                                 aria-valuenow="{{ wp }}" aria-valuemin="0" aria-valuemax="100">
+                                <strong>{{ wp }}%</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>食物名称</th>
+                                    <th>类别</th>
+                                    <th>剩余比例</th>
+                                    <th>权重</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in result.analysis['items'] %}
+                                <tr>
+                                    <td><strong>{{ item.name }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ item.category }}</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar
+                                                    {% if item.estimated_remaining_percentage < 30 %}bg-success
+                                                    {% elif item.estimated_remaining_percentage < 60 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}"
+                                                    style="width: {{ item.estimated_remaining_percentage }}%">
+                                                </div>
+                                            </div>
+                                            <span class="small">{{ item.estimated_remaining_percentage }}%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">×{{ {'肉类':1.5,'海鲜':1.5,'主食':1.0,'蔬菜':0.8,'汤品':0.7,'甜点':1.2,'水果':0.6,'饮品':0.5}.get(item.category, 1.0) }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="text-center mt-4">
+        <a href="/product1" class="btn btn-outline-success btn-lg me-3">
+            <i class="fas fa-redo me-2"></i>重新分析
+        </a>
+        <a href="/product2" class="btn btn-primary btn-lg">
+            <i class="fas fa-utensils me-2"></i>体验剩菜搭配
+        </a>
+    </div>
+</div>
+{% endblock %}
