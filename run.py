@@ -1,5 +1,5 @@
 """
-自助餐零废弃智能管理系统 - 启动脚本
+ZeroDine零膳 - 启动脚本
 直接运行: python run.py
 """
 import os
@@ -15,8 +15,8 @@ if sys.platform == 'win32':
 
 def main():
     print("=" * 60)
-    print("🍽️  自助餐零废弃智能管理系统")
-    print("   基于AI视觉识别的酒店自助餐零废弃方案")
+    print("🍽️  ZeroDine零膳")
+    print("   AI视觉识别驱动的自助餐零废弃方案")
     print("=" * 60)
     print()
 

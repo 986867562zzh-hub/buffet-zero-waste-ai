@@ -1,5 +1,5 @@
 """
-自助餐零废弃智能管理系统 - Live Demo
+ZeroDine零膳 - Live Demo
 Flask Web Application | 课程: 智慧旅游专题研究 | 教师: 黃穎祚
 
 AI引擎双模式:
@@ -2540,7 +2540,7 @@ if __name__ == '__main__':
     mode_label = "REAL AI (Claude Vision)" if mode == "real_ai" else "SMART DEMO (图像分析)"
 
     print("=" * 60)
-    print("  自助餐零废弃智能管理系统 - Live Demo")
+    print("  ZeroDine零膳 - Live Demo")
     print("=" * 60)
     print(f"  AI模式: {mode_label}")
     # Render会通过PORT环境变量指定端口，本地默认5000

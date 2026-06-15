@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title 自助餐零废弃智能管理系统
+title ZeroDine零膳
 
 echo ============================================
-echo 🍽️  自助餐零废弃智能管理系统 - Live Demo
+echo 🍽️  ZeroDine零膳 - Live Demo
 echo ============================================
 echo.
 
