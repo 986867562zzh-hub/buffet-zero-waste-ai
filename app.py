@@ -1125,70 +1125,52 @@ class SmartMatcher:
 
     # ========== 匹配方法 ==========
     def match_plate(self, uploaded_image_path):
-        """匹配餐盘照片 → 返回1-3道最匹配的菜品"""
+        """匹配餐盘照片 → 返回最匹配的1道菜"""
         try:
             query_features = self._extract_features(uploaded_image_path)
             if not query_features:
                 return None
 
-            # 与每个参考图计算综合相似度
+            # 与每道菜的参考图计算综合相似度
             scored = []
             for dish_id, ref_features in self.profiles.items():
                 sim = self._compute_similarity(query_features, ref_features)
-                if sim > 0.55:  # 综合阈值：必须55%以上才算匹配
-                    dish = self.library.get_dish(dish_id)
-                    if dish:
-                        scored.append((dish, sim))
+                dish = self.library.get_dish(dish_id)
+                if dish:
+                    scored.append((dish, sim))
 
             scored.sort(key=lambda x: x[1], reverse=True)
 
-            # 最多3道菜
-            matches = []
-            for dish, sim in scored[:3]:
-                sim_pct = round(sim * 100)
-                if sim > 0.75:
-                    conf = 'high'
-                    portion = '大份'
-                elif sim > 0.65:
-                    conf = 'medium'
-                    portion = '中份'
-                else:
-                    conf = 'low'
-                    portion = '小份'
+            if not scored:
+                return None
 
-                matches.append({
-                    'name': dish['name'],
-                    'dish_id': dish['id'],
-                    'confidence': conf,
-                    'similarity': sim_pct,
-                    'category': dish['category'],
-                    'estimated_remaining_percentage': sim_pct,
-                    'estimated_original_portion': portion,
-                    'visual_evidence': f"综合特征匹配 {sim_pct}%（哈希+颜色+纹理）"
-                })
+            # 只取最佳匹配的那一道菜
+            dish, sim = scored[0]
+            sim_pct = round(sim * 100)
 
-            # 如果没有匹配到任何菜品
-            if not matches:
-                # 返回最像的一项（即使低于阈值）
-                scored2 = []
-                for dish_id, ref_features in self.profiles.items():
-                    sim = self._compute_similarity(query_features, ref_features)
-                    dish = self.library.get_dish(dish_id)
-                    if dish:
-                        scored2.append((dish, sim))
-                scored2.sort(key=lambda x: x[1], reverse=True)
-                if scored2:
-                    dish, sim = scored2[0]
-                    matches.append({
-                        'name': '疑似' + dish['name'],
-                        'dish_id': dish['id'],
-                        'confidence': 'low',
-                        'similarity': round(sim * 100),
-                        'category': dish['category'],
-                        'estimated_remaining_percentage': round(sim * 100),
-                        'estimated_original_portion': '小份',
-                        'visual_evidence': f"低置信度匹配，最接近{dish['name']}(相似度{sim*100:.0f}%)"
-                    })
+            if sim > 0.70:
+                conf = 'high'
+                portion = '中份'
+                evidence = f"✅ 高置信度匹配 {dish['name']}（相似度{sim_pct}%）"
+            elif sim > 0.55:
+                conf = 'medium'
+                portion = '小份'
+                evidence = f"🔍 中等置信度，最接近 {dish['name']}（相似度{sim_pct}%）"
+            else:
+                conf = 'low'
+                portion = '小份'
+                evidence = f"⚠️ 低置信度（{sim_pct}%），可能是 {dish['name']}，建议换张清晰照片重试"
+
+            matches = [{
+                'name': dish['name'],
+                'dish_id': dish['id'],
+                'confidence': conf,
+                'similarity': sim_pct,
+                'category': dish['category'],
+                'estimated_remaining_percentage': sim_pct,
+                'estimated_original_portion': portion,
+                'visual_evidence': evidence
+            }]
 
             # 估算餐盘覆盖率
             img = Image.open(uploaded_image_path).convert('RGB')
