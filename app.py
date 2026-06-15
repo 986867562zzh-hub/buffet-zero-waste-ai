@@ -1248,12 +1248,12 @@ class AIEngine:
         # 1. 闭集AI匹配（最佳方案）
         if self.mode == 'closed_set_ai' and self.closed_set:
             result = self.closed_set.analyze_plate_waste(image_path)
-            if result:
+            if result and (result.get('items') or result.get('matched_dishes')):
                 return result
-        # 2. 闭集Smart匹配
+        # 2. 闭集Smart匹配（需要：结果非空且有实际匹配项）
         if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
             result = self.smart_matcher.match_plate(image_path)
-            if result:
+            if result and result.get('items'):
                 return result
         # 3. 旧版真实AI（无菜品库时）
         if self.mode == 'real_ai':
@@ -1261,7 +1261,7 @@ class AIEngine:
             if result:
                 result['analysis_method'] = 'real_ai_claude'
                 return result
-        # 4. 旧版Smart Demo兜底
+        # 4. 旧版Smart Demo兜底（总能识别出一些东西）
         return self.smart.analyze_plate_waste(image_path)
 
     def identify_buffet_dishes(self, image_paths):
@@ -1269,12 +1269,12 @@ class AIEngine:
         # 1. 闭集AI匹配（最佳方案）
         if self.mode == 'closed_set_ai' and self.closed_set:
             result = self.closed_set.identify_buffet_dishes(image_paths)
-            if result:
+            if result and result.get('identified_dishes'):
                 return result
-        # 2. 闭集Smart匹配
+        # 2. 闭集Smart匹配（需要：结果非空且有实际匹配项）
         if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
             result = self.smart_matcher.match_buffet(image_paths)
-            if result:
+            if result and result.get('identified_dishes'):
                 return result
         # 3. 旧版真实AI（无菜品库时）
         if self.mode == 'real_ai':
