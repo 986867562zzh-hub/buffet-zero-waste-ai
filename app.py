@@ -73,72 +73,107 @@ def load_dishes():
 #  用于闭集AI匹配，避免开放式识别的不准确问题
 # ====================================================================
 class DishLibrary:
-    """固定菜品库：管理12道菜及其参考图片，支持CRUD操作"""
+    """固定菜品库：参考图以base64编码存储在JSON中，确保Render部署不丢失"""
 
-    def __init__(self, library_path, reference_dir, static_prefix='/static/reference_dishes'):
+    def __init__(self, library_path, reference_dir=None, static_prefix='/static/reference_dishes'):
         self.library_path = library_path
-        self.reference_dir = reference_dir
+        self.reference_dir = reference_dir  # 保留兼容，但不再主动使用
         self.static_prefix = static_prefix
+        self._temp_dir = os.path.join(os.path.dirname(library_path), '..', 'static', 'uploads', '_ref_cache')
+        os.makedirs(self._temp_dir, exist_ok=True)
 
     def load(self):
-        """加载菜品库JSON"""
         if not os.path.exists(self.library_path):
             return {'dishes': [], 'total_dishes': 0}
         with open(self.library_path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
     def save(self, data):
-        """保存菜品库JSON（原子写入）"""
+        """保存到JSON（原子写入），推送后可持久化"""
         tmp = self.library_path + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp, self.library_path)
 
     def list_dishes(self):
-        """列出所有菜品（不含图片二进制数据）"""
+        """列出所有菜品，附上第一张参考图的base64数据用于显示"""
         data = self.load()
         dishes = data.get('dishes', [])
         for d in dishes:
-            d['has_references'] = bool(d.get('reference_images', []))
-            d['ref_count'] = len(d.get('reference_images', []))
+            refs = d.get('reference_images', [])
+            d['has_references'] = bool(refs)
+            d['ref_count'] = len(refs)
         return dishes
 
     def get_dish(self, dish_id):
-        """根据ID获取单个菜品"""
         dishes = self.list_dishes()
         for d in dishes:
             if d['id'] == dish_id:
                 return d
         return None
 
-    def get_reference_images(self, dish_id):
-        """获取某菜品的参考图片绝对路径列表"""
-        dish_dir = os.path.join(self.reference_dir, dish_id)
-        if not os.path.isdir(dish_dir):
-            return []
-        images = []
-        for f in sorted(os.listdir(dish_dir)):
-            if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')) and not f.startswith('.'):
-                images.append(os.path.join(dish_dir, f))
-        return images
+    def _image_to_base64(self, image_file, max_size=300):
+        """将上传图片转为base64 data URI（小尺寸节省空间）"""
+        try:
+            img = Image.open(image_file).convert('RGB')
+            img.thumbnail((max_size, max_size), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=75)
+            b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            return f"data:image/jpeg;base64,{b64}"
+        except Exception as e:
+            print(f"[DishLibrary] image_to_base64 error: {e}")
+            return None
+
+    def _base64_to_file(self, b64_data_uri, output_path=None):
+        """将base64 data URI解码写入临时文件，返回文件路径（供SmartMatcher等需要文件路径的场景）"""
+        try:
+            if ',' not in b64_data_uri:
+                return None
+            header, b64 = b64_data_uri.split(',', 1)
+            data = base64.b64decode(b64)
+            if not output_path:
+                output_path = os.path.join(self._temp_dir, f"ref_{uuid.uuid4().hex[:8]}.jpg")
+            with open(output_path, 'wb') as f:
+                f.write(data)
+            return output_path
+        except Exception as e:
+            print(f"[DishLibrary] base64_to_file error: {e}")
+            return None
 
     def get_reference_urls(self, dish_id):
-        """获取某菜品的参考图片URL列表"""
-        images = self.get_reference_images(dish_id)
-        urls = []
-        for img in images:
-            rel = os.path.relpath(img, self.reference_dir)
-            urls.append(f"{self.static_prefix}/{dish_id}/{os.path.basename(img)}")
-        return urls
+        """返回参考图的URL列表（base64 data URI可直接用于<img src>）"""
+        dish = self.get_dish(dish_id)
+        if not dish:
+            return []
+        return dish.get('reference_images', [])
+
+    def get_reference_images(self, dish_id):
+        """获取参考图片的文件路径（兼容SmartMatcher等需要文件的场景）"""
+        dish = self.get_dish(dish_id)
+        if not dish:
+            return []
+        refs = dish.get('reference_images', [])
+        paths = []
+        for i, b64_uri in enumerate(refs):
+            cache_path = os.path.join(self._temp_dir, f"{dish_id}_ref{i}.jpg")
+            if not os.path.exists(cache_path):
+                self._base64_to_file(b64_uri, cache_path)
+            if os.path.exists(cache_path):
+                paths.append(cache_path)
+        return paths
 
     def add_dish(self, dish_data, image_file=None):
-        """添加一道菜，可选上传参考图"""
         data = self.load()
         dishes = data.get('dishes', [])
-
-        # 检查重复
         if any(d['id'] == dish_data['id'] for d in dishes):
             return False, f"菜品ID '{dish_data['id']}' 已存在"
+
+        refs = []
+        if image_file and hasattr(image_file, 'filename') and image_file.filename:
+            b64 = self._image_to_base64(image_file)
+            if b64:
+                refs.append(b64)
 
         dish = {
             'id': dish_data['id'],
@@ -157,28 +192,15 @@ class DishLibrary:
             'sodium': int(dish_data.get('sodium', 0)),
             'gi': int(dish_data.get('gi', 0)),
             'original_price': int(dish_data.get('original_price', 0)),
-            'reference_images': []
+            'reference_images': refs
         }
-
         dishes.append(dish)
         data['dishes'] = dishes
         data['total_dishes'] = len(dishes)
         self.save(data)
-
-        # 保存参考图片
-        if image_file:
-            dish_dir = os.path.join(self.reference_dir, dish_data['id'])
-            os.makedirs(dish_dir, exist_ok=True)
-            ref_images = self._save_reference_images(dish_dir, [image_file])
-            dish['reference_images'] = ref_images
-            data['dishes'] = [dish if d['id'] == dish_data['id'] else d for d in dishes]
-            data['total_dishes'] = len(dishes)
-            self.save(data)
-
-        return True, f"菜品 '{dish_data['name']}' 添加成功"
+        return True, f"菜品 '{dish_data['name']}' 添加成功，参考图已base64编码存入JSON"
 
     def update_dish(self, dish_id, updates):
-        """更新菜品元数据"""
         data = self.load()
         dishes = data.get('dishes', [])
         for i, d in enumerate(dishes):
@@ -200,23 +222,24 @@ class DishLibrary:
         return False, f"未找到菜品 '{dish_id}'"
 
     def add_reference_image(self, dish_id, image_file):
-        """为已有菜品追加参考图"""
+        """追加参考图（base64编码存入JSON）"""
         data = self.load()
         dishes = data.get('dishes', [])
         for d in dishes:
             if d['id'] == dish_id:
-                dish_dir = os.path.join(self.reference_dir, dish_id)
-                os.makedirs(dish_dir, exist_ok=True)
-                new_refs = self._save_reference_images(dish_dir, [image_file])
-                d['reference_images'] = d.get('reference_images', []) + new_refs
+                b64 = self._image_to_base64(image_file)
+                if b64:
+                    d.setdefault('reference_images', []).append(b64)
                 data['dishes'] = [d if di['id'] == dish_id else di for di in dishes]
                 self.save(data)
-                return True, f"参考图已追加到 '{d['name']}'"
+                # 清除缓存的文件
+                cache_path = os.path.join(self._temp_dir, f"{dish_id}_ref{len(d.get('reference_images',[]))-1}.jpg")
+                if os.path.exists(cache_path):
+                    os.remove(cache_path)
+                return True, f"参考图已保存到 '{d['name']}' (base64编码)"
         return False, f"未找到菜品 '{dish_id}'"
 
     def delete_dish(self, dish_id):
-        """删除菜品及参考图片目录"""
-        import shutil
         data = self.load()
         dishes = data.get('dishes', [])
         removed = None
@@ -230,51 +253,20 @@ class DishLibrary:
             data['dishes'] = new_dishes
             data['total_dishes'] = len(new_dishes)
             self.save(data)
-            # 删除参考图目录
-            dish_dir = os.path.join(self.reference_dir, dish_id)
-            if os.path.isdir(dish_dir):
-                shutil.rmtree(dish_dir, ignore_errors=True)
+            # 清理缓存文件
+            for f in os.listdir(self._temp_dir):
+                if f.startswith(dish_id):
+                    os.remove(os.path.join(self._temp_dir, f))
             return True, f"菜品 '{removed['name']}' 已删除"
         return False, f"未找到菜品 '{dish_id}'"
 
-    def _save_reference_images(self, dish_dir, files):
-        """保存参考图片到指定目录，返回相对路径列表"""
-        saved = []
-        for f in files:
-            if f and hasattr(f, 'filename') and f.filename:
-                orig = secure_filename(f.filename)
-                ext = os.path.splitext(orig)[1].lower()
-                if ext not in ('.jpg', '.jpeg', '.png', '.webp'):
-                    continue
-                idx = len(os.listdir(dish_dir))
-                filename = f"ref_{idx+1:03d}{ext}"
-                filepath = os.path.join(dish_dir, filename)
-                f.save(filepath)
-                # 验证为有效图片
-                try:
-                    img = Image.open(filepath)
-                    img.verify()
-                    # resize if too large
-                    img = Image.open(filepath)
-                    if max(img.size) > 1200:
-                        img.thumbnail((1200, 1200), Image.LANCZOS)
-                        img.save(filepath)
-                    saved.append(filename)
-                except Exception:
-                    os.remove(filepath)
-        return saved
-
     def build_claude_context(self, include_images=True, max_img_size=512):
-        """
-        构建Claude API的菜品库上下文（文本描述+参考图），
-        作为每次识别请求的"已知知识库"
-        """
+        """构建Claude API的菜品库上下文，图片直接使用base64"""
         content = []
         content.append({
             "type": "text",
             "text": "=" * 60 + "\n固定菜品库（已知的12道菜）- 请只从以下菜品中识别匹配：\n" + "=" * 60
         })
-
         dishes = self.list_dishes()
         for i, dish in enumerate(dishes):
             desc = (
@@ -290,14 +282,30 @@ class DishLibrary:
             content.append({"type": "text", "text": desc})
 
             if include_images:
-                ref_imgs = self.get_reference_images(dish['id'])
-                for img_path in ref_imgs:
-                    b64, mime = self._encode_ref_image(img_path, max_img_size)
-                    if b64:
-                        content.append({
-                            "type": "image",
-                            "source": {"type": "base64", "media_type": mime, "data": b64}
-                        })
+                refs = dish.get('reference_images', [])
+                for b64_uri in refs:
+                    if b64_uri and ',' in b64_uri:
+                        # base64 data URI → 直接用
+                        header, b64 = b64_uri.split(',', 1)
+                        mime = 'image/jpeg'
+                        if 'png' in header:
+                            mime = 'image/png'
+                        elif 'webp' in header:
+                            mime = 'image/webp'
+                        # Decode and re-encode at correct size for Claude
+                        try:
+                            img_data = base64.b64decode(b64)
+                            img = Image.open(io.BytesIO(img_data)).convert('RGB')
+                            img.thumbnail((max_img_size, max_img_size), Image.LANCZOS)
+                            buf = io.BytesIO()
+                            img.save(buf, format='JPEG', quality=80)
+                            final_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                            content.append({
+                                "type": "image",
+                                "source": {"type": "base64", "media_type": "image/jpeg", "data": final_b64}
+                            })
+                        except Exception:
+                            pass
 
         content.append({
             "type": "text",
@@ -311,7 +319,6 @@ class DishLibrary:
         return content
 
     def build_text_context(self):
-        """构建纯文本菜品库上下文（给SmartMatcher用的简化版）"""
         dishes = self.list_dishes()
         lines = []
         for dish in dishes:
@@ -320,18 +327,6 @@ class DishLibrary:
                 f"视觉: {dish['visual_features'][:80]}..."
             )
         return "\n".join(lines)
-
-    @staticmethod
-    def _encode_ref_image(image_path, max_size=512):
-        """缩放并base64编码参考图"""
-        try:
-            img = Image.open(image_path).convert('RGB')
-            img.thumbnail((max_size, max_size), Image.LANCZOS)
-            buf = io.BytesIO()
-            img.save(buf, format='JPEG', quality=80)
-            return base64.b64encode(buf.getvalue()).decode('utf-8'), 'image/jpeg'
-        except Exception:
-            return None, None
 
 
 # ====================================================================
@@ -2082,6 +2077,16 @@ def admin_library_delete(dish_id):
     success, msg = library.delete_dish(dish_id)
     flash(msg, 'warning' if success else 'danger')
     return redirect(url_for('admin_library'))
+
+
+@app.route('/admin/library/export')
+def admin_library_export():
+    """导出当前菜品库JSON（含base64参考图），用于持久化到GitHub"""
+    library_path = os.path.join(app.config['DATA_FOLDER'], 'dish_library.json')
+    if not os.path.exists(library_path):
+        return jsonify({'error': '菜品库文件不存在'}), 404
+    with open(library_path, 'r', encoding='utf-8') as f:
+        return jsonify(json.load(f))
 
 
 # ---- 餐盘合成器 ----

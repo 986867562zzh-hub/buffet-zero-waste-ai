@@ -42,7 +42,7 @@
                         <div class="card-img-top dish-card-img"
                              style="height:160px; background:#f8f9fa; display:flex; align-items:center; justify-content:center; overflow:hidden;">
                             {% if dish.reference_images %}
-                            <img src="/static/reference_dishes/{{ dish.id }}/{{ dish.reference_images[0] }}"
+                            <img src="{{ dish.reference_images[0] }}"
                                  alt="{{ dish.name }}" style="width:100%; height:100%; object-fit:cover;">
                             {% else %}
                             <div class="text-center text-muted">
