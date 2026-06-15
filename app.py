@@ -1540,6 +1540,45 @@ def map_to_discount(score):
 
 
 # ====================================================================
+#  热量估算引擎（产品一热量追踪模式）
+# ====================================================================
+def estimate_calories_for_item(item_name, category, portion='中份'):
+    """根据菜名和分类估算一道菜的热量（kcal）"""
+    # 份量系数
+    portion_factor = {'小份': 0.7, '中份': 1.0, '大份': 1.3}
+    factor = portion_factor.get(portion, 1.0)
+
+    # 先查菜品库
+    try:
+        library = get_dish_library()
+        dishes = library.list_dishes()
+        for d in dishes:
+            if d['name'] == item_name or d['id'] == item_name:
+                return int(d.get('calories', 200) * factor)
+    except Exception:
+        pass
+
+    # 按分类估算
+    category_calories = {
+        '肉类': 260, '海鲜': 140, '蔬菜': 55, '主食': 250,
+        '汤品': 80, '甜点': 280, '水果': 95, '饮品': 60,
+        '酱料': 30, '其他': 150
+    }
+    base = category_calories.get(category, 150)
+    return int(base * factor)
+
+
+def get_calorie_data():
+    """获取session中的热量追踪数据"""
+    return {
+        'total': session.get('calorie_total', 0),
+        'threshold': session.get('calorie_threshold', 1800),
+        'history': session.get('calorie_history', []),
+        'threshold_reached': session.get('calorie_total', 0) >= session.get('calorie_threshold', 1800)
+    }
+
+
+# ====================================================================
 #  餐盘合成器: 将菜品库参考图合成到盘子上
 #  用于生成测试/演示用的合成餐盘照片
 # ====================================================================
@@ -1691,10 +1730,12 @@ def index():
     return render_template('index.html', ai_mode=mode)
 
 
-# ---- 产品一：剩食评分 ----
+# ---- 产品一：剩食评分 + 热量追踪 ----
 @app.route('/product1')
 def product1():
-    return render_template('product1_scan.html')
+    calorie_data = get_calorie_data()
+    return render_template('product1_scan.html', calorie_data=calorie_data)
+
 
 @app.route('/product1/analyze', methods=['POST'])
 def product1_analyze():
@@ -1714,6 +1755,57 @@ def product1_analyze():
     analysis = engine.analyze_plate_waste(filepath)
     analysis['_analysis_mode'] = engine.mode
 
+    # ---- 热量追踪计算 ----
+    mode = request.form.get('mode', 'waste')  # 'calorie' or 'waste'
+    calorie_info = None
+
+    if mode == 'calorie':
+        # 为每个识别到的菜品估算热量
+        items = analysis.get('items', []) or analysis.get('matched_dishes', [])
+        this_round_calories = 0
+        for item in items:
+            name = item.get('name', '')
+            category = item.get('category', '其他')
+            portion = item.get('estimated_original_portion', '中份')
+            cal = estimate_calories_for_item(name, category, portion)
+            item['calories'] = cal
+            this_round_calories += cal
+
+        # 处理"剩余百分比"为吃掉的百分比（热量追踪模式下盘的菜是满的）
+        if mode == 'calorie':
+            for item in items:
+                item['remaining_percentage'] = 100  # 拿来的菜是满的
+                item['estimated_remaining_percentage'] = 100
+
+        # Session累积
+        total = session.get('calorie_total', 0) + this_round_calories
+        session['calorie_total'] = total
+
+        history = session.get('calorie_history', [])
+        history_entry = {
+            'time': datetime.now().strftime('%H:%M'),
+            'image_url': f'/static/uploads/{filename}',
+            'items': [{'name': it.get('name'), 'calories': it.get('calories', 0),
+                       'category': it.get('category')} for it in items],
+            'this_round': this_round_calories,
+            'total': total
+        }
+        history.append(history_entry)
+        session['calorie_history'] = history
+
+        threshold = session.get('calorie_threshold', 1800)
+        threshold_reached = total >= threshold
+
+        calorie_info = {
+            'this_round': this_round_calories,
+            'total': total,
+            'threshold': threshold,
+            'threshold_reached': threshold_reached,
+            'history': history,
+            'items': items
+        }
+
+    # ---- 浪费评分（原有逻辑） ----
     score = calculate_waste_score(analysis)
     discount_info = map_to_discount(score)
 
@@ -1723,11 +1815,31 @@ def product1_analyze():
         'score': score,
         'discount': discount_info,
         'timestamp': datetime.now().strftime('%H:%M:%S'),
-        'ai_mode': engine.mode
+        'ai_mode': engine.mode,
+        'mode': mode,
+        'calorie_info': calorie_info,
     }
     session['last_result'] = result
 
     return render_template('product1_result.html', result=result)
+
+
+@app.route('/product1/calorie-reset', methods=['POST'])
+def product1_calorie_reset():
+    """重置热量累积"""
+    session['calorie_total'] = 0
+    session['calorie_history'] = []
+    return jsonify({'success': True, 'total': 0})
+
+
+@app.route('/product1/calorie-threshold', methods=['POST'])
+def product1_calorie_threshold():
+    """更新热量阈值"""
+    data = request.get_json()
+    threshold = int(data.get('threshold', 1800))
+    threshold = max(500, min(4000, threshold))  # 限制范围500-4000
+    session['calorie_threshold'] = threshold
+    return jsonify({'success': True, 'threshold': threshold})
 
 
 # ---- 产品二：剩菜搭配 ----

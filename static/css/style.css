@@ -515,3 +515,319 @@
 .analysis-method-banner.closed_set { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 .analysis-method-banner.smart_demo { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
 .analysis-method-banner.real_ai { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+/* ================================================================
+   模式切换 Tab
+   ================================================================ */
+.mode-tabs {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.mode-tab {
+    flex: 1;
+    max-width: 280px;
+    padding: 16px 24px;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+.mode-tab:hover {
+    border-color: #dee2e6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.mode-tab.active {
+    border-color: #ff6b6b;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff0f0 100%);
+    box-shadow: 0 4px 16px rgba(255,107,107,0.15);
+}
+.mode-tab .tab-icon {
+    font-size: 1.8rem;
+    display: block;
+    margin-bottom: 4px;
+}
+.mode-tab .tab-sub {
+    display: block;
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 2px;
+}
+.mode-tab.active .tab-sub {
+    color: #ff6b6b;
+}
+.mode-panel {
+    animation: fadeSlideIn 0.35s ease;
+}
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================================
+   热量圆环
+   ================================================================ */
+.calorie-ring-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+.calorie-ring-svg {
+    width: 100%;
+    height: 100%;
+}
+.ring-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+.ring-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #ff6b6b;
+    display: block;
+    line-height: 1;
+}
+.ring-unit {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    display: block;
+}
+.ring-max {
+    font-size: 0.7rem;
+    color: #868e96;
+}
+.ring-progress {
+    transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================================================
+   热量进度条
+   ================================================================ */
+.calorie-progress {
+    border-radius: 12px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+.calorie-progress-bar {
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: width 0.6s ease;
+}
+
+/* ================================================================
+   历史记录
+   ================================================================ */
+.history-item:hover {
+    background: #f8f9fa;
+}
+
+/* ================================================================
+   卡通提醒弹窗
+   ================================================================ */
+.cute-reminder {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: reminderFadeIn 0.5s ease;
+}
+@keyframes reminderFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.reminder-backdrop {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+.reminder-card {
+    position: relative;
+    background: white;
+    border-radius: 24px;
+    padding: 32px 28px 24px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: reminderBounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes reminderBounceIn {
+    from { transform: translateY(60px) scale(0.8); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.reminder-close {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: none; border: none;
+    font-size: 1.2rem; color: #adb5bd;
+    cursor: pointer; padding: 4px 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+.reminder-close:hover {
+    background: #f1f3f5; color: #495057;
+}
+
+/* ---- 卡通角色 ---- */
+.cute-character {
+    margin: 0 auto 16px;
+    animation: characterFloat 3s ease-in-out infinite;
+}
+@keyframes characterFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.character-body {
+    position: relative;
+    width: 140px; height: 140px;
+    margin: 0 auto;
+}
+/* 大肚子 */
+.belly {
+    position: absolute;
+    width: 120px; height: 110px;
+    background: linear-gradient(180deg, #ffd93d 0%, #ffa502 100%);
+    border-radius: 60px 60px 50px 50px;
+    bottom: 10px; left: 10px;
+    box-shadow: inset 0 -8px 20px rgba(0,0,0,0.1), 0 4px 12px rgba(255,165,2,0.3);
+    animation: bellyBreathe 2s ease-in-out infinite;
+}
+@keyframes bellyBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06, 1.04); }
+}
+.belly-shine {
+    position: absolute;
+    width: 30px; height: 20px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    top: 20px; left: 25px;
+    transform: rotate(-20deg);
+}
+/* 脸 */
+.face {
+    position: absolute;
+    width: 70px; height: 60px;
+    top: 15px; left: 35px;
+}
+.eye {
+    position: absolute;
+    width: 10px; height: 12px;
+    background: #2d3436;
+    border-radius: 50%;
+    top: 15px;
+    animation: eyeBlink 3s ease-in-out infinite;
+}
+.left-eye { left: 12px; }
+.right-eye { right: 12px; }
+@keyframes eyeBlink {
+    0%, 95%, 100% { transform: scaleY(1); }
+    97% { transform: scaleY(0.05); }
+}
+.blush {
+    position: absolute;
+    width: 16px; height: 10px;
+    background: rgba(255, 107, 107, 0.4);
+    border-radius: 50%;
+    top: 24px;
+}
+.left-blush { left: 2px; }
+.right-blush { right: 2px; }
+.mouth {
+    position: absolute;
+    width: 16px; height: 8px;
+    border-bottom: 3px solid #2d3436;
+    border-radius: 0 0 10px 10px;
+    bottom: 8px; left: 27px;
+}
+/* 手臂 */
+.arm {
+    position: absolute;
+    width: 18px; height: 40px;
+    background: #ffd93d;
+    border-radius: 10px;
+    top: 50px;
+    transform-origin: top center;
+}
+.left-arm {
+    left: -5px;
+    transform: rotate(15deg);
+    animation: leftArmPat 1.5s ease-in-out infinite;
+}
+.right-arm {
+    right: -5px;
+    transform: rotate(-15deg);
+    animation: rightArmPat 1.5s ease-in-out infinite 0.2s;
+}
+@keyframes leftArmPat {
+    0%, 100% { transform: rotate(15deg); }
+    50% { transform: rotate(5deg) translateY(5px); }
+}
+@keyframes rightArmPat {
+    0%, 100% { transform: rotate(-15deg); }
+    50% { transform: rotate(-5deg) translateY(5px); }
+}
+/* 腿 */
+.leg {
+    position: absolute;
+    width: 22px; height: 18px;
+    background: #ffa502;
+    border-radius: 10px;
+    bottom: 0;
+}
+.left-leg { left: 35px; }
+.right-leg { right: 35px; }
+
+/* ---- 提醒文字 ---- */
+.reminder-title {
+    color: #e17055;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.reminder-msg {
+    color: #636e72;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+.reminder-calorie-info {
+    margin: 12px 0;
+}
+.reminder-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+/* ---- 阈值调节 ---- */
+.threshold-adjust .input-group {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 768px) {
+    .mode-tabs {
+        flex-direction: column;
+        align-items: center;
+    }
+    .mode-tab {
+        max-width: 100%;
+        width: 100%;
+    }
+    .cute-character {
+        transform: scale(0.8);
+    }
+}
