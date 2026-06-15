@@ -255,9 +255,9 @@ function goToStep(stepIndex) {
     updateDemoRing(cumulative, demoThreshold);
     document.getElementById('content-step-' + stepIndex).scrollIntoView({behavior:'smooth'});
 
-    // 如果累积超过阈值，自动弹卡通提醒
-    if (cumulative >= demoThreshold) {
-        setTimeout(function() { showFinalReminder(); }, 1200);
+    // 达到最后一步自动弹出卡通提醒
+    if (stepIndex === stepCalories.length - 1) {
+        setTimeout(function() { showFinalReminder(); }, 800);
     }
 }
 
@@ -266,11 +266,15 @@ function showFinalReminder() {
     let cumulative = 0;
     for (let i = 0; i < stepCalories.length; i++) cumulative += stepCalories[i];
     updateDemoRing(cumulative, demoThreshold);
-    document.getElementById('finalReminder').classList.remove('d-none');
+    var el = document.getElementById('finalReminder');
+    el.classList.remove('d-none');
+    el.style.display = 'flex';  // 确保显示
 }
 
 function closeFinalReminder() {
-    document.getElementById('finalReminder').classList.add('d-none');
+    var el = document.getElementById('finalReminder');
+    el.classList.add('d-none');
+    el.style.display = 'none';
 }
 
 // 页面加载初始化
