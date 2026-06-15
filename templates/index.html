@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}ZeroDine零膳 — 首页{% endblock %}
 
 {% block content %}
@@ -17,16 +17,16 @@
                     减少食物浪费 · 智能折扣激励 · 剩菜二次利用
                 </p>
                 <div class="hero-stats d-flex justify-content-center gap-4 mb-4">
-                    <div class="stat-item">
-                        <span class="stat-number">-30%</span>
+                    <div class="stat-item reveal reveal-scale">
+                        <span class="stat-number" data-target="30" data-prefix="-" data-suffix="%">-30%</span>
                         <span class="stat-label">食物浪费</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number">85折</span>
+                    <div class="stat-item reveal reveal-scale reveal-delay-1">
+                        <span class="stat-number" data-target="85" data-suffix="折">85折</span>
                         <span class="stat-label">最高折扣</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number">28种</span>
+                    <div class="stat-item reveal reveal-scale reveal-delay-2">
+                        <span class="stat-number" data-target="28" data-suffix="种">28种</span>
                         <span class="stat-label">饮食方案</span>
                     </div>
                 </div>
@@ -58,7 +58,7 @@
     <div class="container">
         <div class="row g-4">
             <!-- 产品一 -->
-            <div class="col-lg-6">
+            <div class="col-lg-6 reveal reveal-left">
                 <div class="card product-card h-100 border-0 shadow-lg">
                     <div class="card-img-top product-img-1 d-flex align-items-center justify-content-center">
                         <i class="fas fa-camera-retro fa-4x text-white opacity-75"></i>
@@ -84,7 +84,7 @@
             </div>
 
             <!-- 产品二 -->
-            <div class="col-lg-6">
+            <div class="col-lg-6 reveal reveal-right">
                 <div class="card product-card h-100 border-0 shadow-lg">
                     <div class="card-img-top product-img-2 d-flex align-items-center justify-content-center">
                         <i class="fas fa-utensil-spoon fa-4x text-white opacity-75"></i>
@@ -117,7 +117,7 @@
     <div class="container">
         <h2 class="text-center fw-bold mb-5">系统工作流程</h2>
         <div class="row g-4">
-            <div class="col-md-3 text-center">
+            <div class="col-md-3 text-center reveal reveal-delay-1">
                 <div class="workflow-step">
                     <div class="step-icon bg-success text-white mx-auto mb-3">
                         <i class="fas fa-mobile-alt fa-2x"></i>
@@ -126,7 +126,7 @@
                     <p class="text-muted small">消费者/餐厅拍摄照片上传系统</p>
                 </div>
             </div>
-            <div class="col-md-3 text-center">
+            <div class="col-md-3 text-center reveal reveal-delay-2">
                 <div class="workflow-step">
                     <div class="step-icon bg-primary text-white mx-auto mb-3">
                         <i class="fas fa-brain fa-2x"></i>
@@ -135,7 +135,7 @@
                     <p class="text-muted small">固定菜品库闭集匹配，精准识别12道菜</p>
                 </div>
             </div>
-            <div class="col-md-3 text-center">
+            <div class="col-md-3 text-center reveal reveal-delay-3">
                 <div class="workflow-step">
                     <div class="step-icon bg-warning text-white mx-auto mb-3">
                         <i class="fas fa-calculator fa-2x"></i>
@@ -144,7 +144,7 @@
                     <p class="text-muted small">评分引擎 & 搭配引擎自动计算</p>
                 </div>
             </div>
-            <div class="col-md-3 text-center">
+            <div class="col-md-3 text-center reveal reveal-delay-4">
                 <div class="workflow-step">
                     <div class="step-icon bg-danger text-white mx-auto mb-3">
                         <i class="fas fa-tags fa-2x"></i>
@@ -162,35 +162,36 @@
     <div class="container">
         <h2 class="text-center fw-bold mb-5">技术架构</h2>
         <div class="row g-4">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 reveal reveal-delay-1">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-robot fa-2x text-success mb-3"></i>
                     <h5>AI视觉识别</h5>
-                    <p class="small text-muted">OpenAI GPT-4o Vision<br>零样本图像识别<br>结构化JSON输出</p>
+                    <p class="small text-muted">DeepSeek Vision API<br>闭集菜品库匹配<br>结构化JSON输出</p>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 reveal reveal-delay-2">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-chart-pie fa-2x text-primary mb-3"></i>
                     <h5>评分算法</h5>
                     <p class="small text-muted">加权食物分类评分<br>多级折扣映射<br>实时计算响应</p>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 reveal reveal-delay-3">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-puzzle-piece fa-2x text-warning mb-3"></i>
                     <h5>搭配引擎</h5>
-                    <p class="small text-muted">28种饮食约束模型<br>多目标组合优化<br>营养均衡校验</p>
+                    <p class="small text-muted">12种饮食约束模型<br>P1-P4逐级放宽<br>营养合规评分</p>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 reveal reveal-delay-4">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-cloud fa-2x text-danger mb-3"></i>
                     <h5>云端部署</h5>
-                    <p class="small text-muted">Python FastAPI/Flask<br>RESTful API<br>微信小程序前端</p>
+                    <p class="small text-muted">Python Flask<br>Render.com 24/7在线<br>全平台响应式</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 {% endblock %}
+

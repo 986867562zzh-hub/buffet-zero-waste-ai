@@ -41,14 +41,30 @@ from werkzeug.utils import secure_filename
 from PIL import Image, ImageStat, ImageFilter, ImageDraw
 import io
 
+# ========== 导入配置 ==========
+try:
+    from config import (
+        SECRET_KEY, MAX_CONTENT_LENGTH,
+        UPLOAD_FOLDER, DATA_FOLDER, REFERENCE_DIR, COMPOSITES_DIR,
+        CALORIE_THRESHOLD_DEFAULT, CALORIE_THRESHOLD_MIN, CALORIE_THRESHOLD_MAX,
+        WASTE_SCORE_GRADES, CATEGORY_WEIGHTS,
+        DIETARY_LABELS, MEAL_ROLES,
+        AI_MAX_TOKENS_VISION, AI_MAX_TOKENS_ANALYSIS, AI_MAX_TOKENS_MATCH, AI_TEMPERATURE,
+        DISH_LIBRARY_PATH, DISHES_DATA_PATH,
+        COLOR_SIMILARITY_WEIGHT, HASH_WEIGHT, EDGE_WEIGHT, MATCH_THRESHOLD,
+    )
+    USE_CONFIG = True
+except ImportError:
+    USE_CONFIG = False
+
 # ========== App 初始化 ==========
 app = Flask(__name__)
-app.secret_key = 'buffet-zero-waste-demo-2024'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max for multiple photos
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
-app.config['DATA_FOLDER'] = os.path.join(os.path.dirname(__file__), 'data')
-app.config['REFERENCE_DIR'] = os.path.join(os.path.dirname(__file__), 'static', 'reference_dishes')
-app.config['COMPOSITES_DIR'] = os.path.join(os.path.dirname(__file__), 'static', 'composites')
+app.secret_key = SECRET_KEY if USE_CONFIG else 'buffet-zero-waste-demo-2024'
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH if USE_CONFIG else 50 * 1024 * 1024  # 50MB max
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER if USE_CONFIG else os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+app.config['DATA_FOLDER'] = DATA_FOLDER if USE_CONFIG else os.path.join(os.path.dirname(__file__), 'data')
+app.config['REFERENCE_DIR'] = REFERENCE_DIR if USE_CONFIG else os.path.join(os.path.dirname(__file__), 'static', 'reference_dishes')
+app.config['COMPOSITES_DIR'] = COMPOSITES_DIR if USE_CONFIG else os.path.join(os.path.dirname(__file__), 'static', 'composites')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['COMPOSITES_DIR'], exist_ok=True)
@@ -1882,9 +1898,9 @@ def get_calorie_data():
     """获取session中的热量追踪数据"""
     return {
         'total': session.get('calorie_total', 0),
-        'threshold': session.get('calorie_threshold', 1800),
+        'threshold': session.get('calorie_threshold', CALORIE_THRESHOLD_DEFAULT if USE_CONFIG else 1800),
         'history': session.get('calorie_history', []),
-        'threshold_reached': session.get('calorie_total', 0) >= session.get('calorie_threshold', 1800)
+        'threshold_reached': session.get('calorie_total', 0) >= session.get('calorie_threshold', CALORIE_THRESHOLD_DEFAULT if USE_CONFIG else 1800)
     }
 
 
@@ -2109,7 +2125,7 @@ def product1_analyze():
         history.append(history_entry)
         session['calorie_history'] = history
 
-        threshold = session.get('calorie_threshold', 1800)
+        threshold = session.get('calorie_threshold', CALORIE_THRESHOLD_DEFAULT if USE_CONFIG else 1800)
         threshold_reached = total >= threshold
 
         calorie_info = {

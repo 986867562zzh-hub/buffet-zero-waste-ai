@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}剩菜智能搭配 - 拍照识别{% endblock %}
 
 {% block content %}
@@ -43,9 +43,9 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="/product2/identify" method="POST" enctype="multipart/form-data" id="identifyForm">
+                    <form action="/product2/identify" method="POST" enctype="multipart/form-data" id="identifyForm" data-auto-loading>
                         <!-- 多图上传区域 -->
-                        <div class="multi-upload-zone text-center p-4 mb-3" id="multiUploadZone">
+                        <div class="multi-upload-zone text-center p-4 mb-3" id="multiUploadZone" aria-label="上传菜品照片区域">
                             <div id="multiUploadPrompt">
                                 <i class="fas fa-images fa-3x text-danger mb-3"></i>
                                 <h6>📸 拍摄自助餐台剩余菜品</h6>
@@ -148,7 +148,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="/product2/match" method="POST" id="matchForm">
+                    <form action="/product2/match" method="POST" id="matchForm" data-auto-loading>
                         <div class="row g-2">
                             {% for dt in dietary_types %}
                             <div class="col-6 col-md-3">
@@ -201,7 +201,7 @@
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-body p-3">
             <h6 class="fw-bold mb-2"><i class="fas fa-info-circle me-2 text-info"></i>最佳拍照指南</h6>
-            <div class="row g-2 small text-muted">
+            <div class="row g-2 small text-muted photo-guide-grid">
                 <div class="col-md-3"><span class="badge bg-danger me-1">照片1</span> 热菜台：肉类、热炒菜、炖菜</div>
                 <div class="col-md-3"><span class="badge bg-warning me-1">照片2</span> 主食汤羹台：米饭、面食、汤品</div>
                 <div class="col-md-3"><span class="badge bg-info me-1">照片3</span> 冷菜甜品台：沙拉、水果、甜点</div>
@@ -284,3 +284,4 @@ document.getElementById('matchForm').addEventListener('submit', function() {
 });
 </script>
 {% endblock %}
+

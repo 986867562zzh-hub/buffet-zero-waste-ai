@@ -291,6 +291,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const msg = reminderMessages[idx].replace('<strong>TOTAL</strong>', '<strong>' + currentTotal + '</strong>');
         msgEl.innerHTML = msg;
     }
+
+    // 🎉 光盘英雄撒花特效
+    var score = parseInt('{{ result.score if result.score else 0 }}') || 0;
+    var isWasteMode = '{{ result.mode }}' !== 'calorie';
+    if (isWasteMode && score >= 95 && typeof Confetti !== 'undefined') {
+        setTimeout(function() { Confetti.fire(4500); }, 600);
+    }
 });
 </script>
 {% endblock %}

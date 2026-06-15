@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}拍照识别 - 热量追踪 & 剩食评分{% endblock %}
 
 {% block content %}
@@ -128,7 +128,7 @@
                             当累积热量接近阈值时，会温柔提醒你别拿太多哦~
                         </p>
 
-                        <form action="/product1/analyze" method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <form action="/product1/analyze" method="POST" enctype="multipart/form-data" id="uploadForm" data-auto-loading>
                             <input type="hidden" name="mode" value="calorie">
                             <div class="upload-zone text-center p-4 mb-3" id="uploadZone">
                                 <div id="uploadPrompt">
@@ -182,7 +182,7 @@
 
                         <form action="/product1/analyze" method="POST" enctype="multipart/form-data" id="wasteForm">
                             <input type="hidden" name="mode" value="waste">
-                            <div class="upload-zone text-center p-5 mb-3" id="wasteUploadZone">
+                            <div class="upload-zone text-center p-5 mb-3" id="wasteUploadZone" aria-label="上传餐盘照片区域">
                                 <div id="wasteUploadPrompt">
                                     <i class="fas fa-cloud-upload-alt fa-4x text-success mb-3"></i>
                                     <h5>点击上传或拖拽照片到此处</h5>
@@ -373,3 +373,4 @@ function resetCalories() {
 }
 </script>
 {% endblock %}
+

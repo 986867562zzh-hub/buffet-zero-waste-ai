@@ -1,5 +1,52 @@
 {% extends "base.html" %}
-{% block title %}搭配结果 - 剩菜智能搭配{% endblock %}
+{% block title %}搭配结果 - 剩菜智能搭配<!-- 下单成功 Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-5">
+                <div class="mb-3">
+                    <span style="font-size: 4rem;">🎉</span>
+                </div>
+                <h4 class="fw-bold mb-2" id="orderModalLabel">下单成功！</h4>
+                <p class="text-muted mb-3">感谢您为减少食物浪费做出贡献 🌱</p>
+                <div class="bg-light rounded-3 p-3 mb-3 text-start">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">订单号</span>
+                        <strong id="modalOrderId" class="text-success">BF-0000</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">套餐</span>
+                        <strong id="modalComboName">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">金额</span>
+                        <strong id="modalPrice" class="text-danger">¥0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">取餐地点</span>
+                        <strong>酒店自助餐厅前台</strong>
+                    </div>
+                </div>
+                <div class="alert alert-warning py-2 small mb-3">
+                    <i class="fas fa-clock me-1"></i> 请于 <strong>30分钟</strong> 内到店取餐
+                </div>
+                <button type="button" class="btn btn-success btn-lg w-100" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-1"></i>我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function showOrderModal(comboName, price, orderId) {
+    document.getElementById("modalOrderId").textContent = orderId;
+    document.getElementById("modalComboName").textContent = comboName;
+    document.getElementById("modalPrice").textContent = "\u00a5" + price;
+    var modal = new bootstrap.Modal(document.getElementById("orderModal"));
+    modal.show();
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -140,7 +187,7 @@
                             <span>热量</span><strong>{{ rec.total_nutrition.calories }} kcal</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-danger" style="width:{{ [rec.total_nutrition.calories / 800 * 100, 100]|min }}%"></div>
+                            <div class="progress-bar bg-danger animate-once" data-width="{{ [rec.total_nutrition.calories / 800 * 100, 100]|min }}%" style="width:0%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -148,7 +195,7 @@
                             <span>蛋白质</span><strong>{{ rec.total_nutrition.protein }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-primary" style="width:{{ [rec.total_nutrition.protein / 50 * 100, 100]|min }}%"></div>
+                            <div class="progress-bar bg-primary animate-once" data-width="{{ [rec.total_nutrition.protein / 50 * 100, 100]|min }}%" style="width:0%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -156,7 +203,7 @@
                             <span>碳水化合物</span><strong>{{ rec.total_nutrition.carbs }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-warning" style="width:{{ [rec.total_nutrition.carbs / 80 * 100, 100]|min }}%"></div>
+                            <div class="progress-bar bg-warning animate-once" data-width="{{ [rec.total_nutrition.carbs / 80 * 100, 100]|min }}%" style="width:0%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -164,7 +211,7 @@
                             <span>脂肪</span><strong>{{ rec.total_nutrition.fat }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-info" style="width:{{ [rec.total_nutrition.fat / 30 * 100, 100]|min }}%"></div>
+                            <div class="progress-bar bg-info animate-once" data-width="{{ [rec.total_nutrition.fat / 30 * 100, 100]|min }}%" style="width:0%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar">
@@ -172,7 +219,7 @@
                             <span>膳食纤维</span><strong>{{ rec.total_nutrition.fiber }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-success" style="width:{{ [rec.total_nutrition.fiber / 15 * 100, 100]|min }}%"></div>
+                            <div class="progress-bar bg-success animate-once" data-width="{{ [rec.total_nutrition.fiber / 15 * 100, 100]|min }}%" style="width:0%"></div>
                         </div>
                     </div>
                 </div>
@@ -184,7 +231,7 @@
                 <small class="text-muted">
                     <i class="fas fa-clock me-1"></i>取餐时间：{{ result.current_time }} 起可到店取餐
                 </small>
-                <button class="btn btn-success btn-sm" onclick="alert('🎉 下单成功！订单号：BUFFET' + Math.floor(Math.random()*9000+1000) + '\n请到酒店前台出示此订单号取餐。\n感谢您为减少食物浪费做出贡献！🌱')">
+                <button class="btn btn-success btn-sm" onclick="showOrderModal('{{ rec.name }}', {{ rec.total_discounted_price }}, 'BUFFET' + Math.floor(Math.random()*9000+1000))">
                     <i class="fas fa-shopping-cart me-1"></i>立即下单
                 </button>
             </div>
@@ -202,4 +249,51 @@
         </a>
     </div>
 </div>
+<!-- 下单成功 Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-5">
+                <div class="mb-3">
+                    <span style="font-size: 4rem;">🎉</span>
+                </div>
+                <h4 class="fw-bold mb-2" id="orderModalLabel">下单成功！</h4>
+                <p class="text-muted mb-3">感谢您为减少食物浪费做出贡献 🌱</p>
+                <div class="bg-light rounded-3 p-3 mb-3 text-start">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">订单号</span>
+                        <strong id="modalOrderId" class="text-success">BF-0000</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">套餐</span>
+                        <strong id="modalComboName">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">金额</span>
+                        <strong id="modalPrice" class="text-danger">¥0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">取餐地点</span>
+                        <strong>酒店自助餐厅前台</strong>
+                    </div>
+                </div>
+                <div class="alert alert-warning py-2 small mb-3">
+                    <i class="fas fa-clock me-1"></i> 请于 <strong>30分钟</strong> 内到店取餐
+                </div>
+                <button type="button" class="btn btn-success btn-lg w-100" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-1"></i>我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function showOrderModal(comboName, price, orderId) {
+    document.getElementById("modalOrderId").textContent = orderId;
+    document.getElementById("modalComboName").textContent = comboName;
+    document.getElementById("modalPrice").textContent = "\u00a5" + price;
+    var modal = new bootstrap.Modal(document.getElementById("orderModal"));
+    modal.show();
+}
+</script>
 {% endblock %}
