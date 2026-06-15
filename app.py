@@ -2343,6 +2343,24 @@ def demo_mode():
             'category': '水果',
             'calories': 95
         },
+        {
+            'title': '第七盘：又馋了，来份宫保鸡丁',
+            'desc': '没忍住又去拿了一盘...',
+            'dish_ids': ['gongbaojiding'],
+            'ref_image': get_ref('gongbaojiding'),
+            'identify_name': '宫保鸡丁',
+            'category': '肉类',
+            'calories': 245
+        },
+        {
+            'title': '第八盘：再夹两块红烧肉解馋',
+            'desc': '最后放纵一下！热量即将超标 ⚠️',
+            'dish_ids': ['hongshaorou'],
+            'ref_image': get_ref('hongshaorou'),
+            'identify_name': '红烧肉',
+            'category': '肉类',
+            'calories': 380
+        },
     ]
 
     total = sum(s['calories'] for s in demo_steps)

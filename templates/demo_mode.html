@@ -254,6 +254,11 @@ function goToStep(stepIndex) {
 
     updateDemoRing(cumulative, demoThreshold);
     document.getElementById('content-step-' + stepIndex).scrollIntoView({behavior:'smooth'});
+
+    // 如果累积超过阈值，自动弹卡通提醒
+    if (cumulative >= demoThreshold) {
+        setTimeout(function() { showFinalReminder(); }, 1200);
+    }
 }
 
 // 显示最终提醒
