@@ -836,50 +836,123 @@ class DeepSeekVision:
         self.available = bool(self.api_key)
         self.client = None
         self._library = None  # v2.6方案B: 延迟加载菜品库
+        # v2.6: v4推理模型需要更大的max_tokens（推理tokens+输出tokens）
+        self.max_tokens = 4000
         if self.available:
             try:
                 from openai import OpenAI
+                import httpx
+                # 绕过系统代理（校园网代理可能拦截DeepSeek API）
+                http_client = httpx.Client(trust_env=False, timeout=60.0)
                 self.client = OpenAI(
                     api_key=self.api_key,
-                    base_url="https://api.deepseek.com"
+                    base_url="https://api.deepseek.com",
+                    http_client=http_client
                 )
             except Exception as e:
                 print(f"[DeepSeek] Init error: {e}")
                 self.available = False
 
+    # ═══════════════════════════════════════════
+    # v2.6 PIL图像特征提取: 将图片转为文字描述供DeepSeek推理
+    # ═══════════════════════════════════════════
+    @staticmethod
+    def _describe_image(image_path):
+        """用PIL提取图片视觉特征，返回文字描述"""
+        from collections import Counter
+        try:
+            img = Image.open(image_path).convert('RGB')
+            img.thumbnail((400, 400), Image.LANCZOS)
+            w, h = img.size
+            pixels = list(img.getdata())
+        except Exception:
+            return "无法读取图片"
+
+        # 颜色统计
+        color_bins = Counter()
+        total_sampled = 0
+        for r, g, b in pixels[::8]:  # 采样加速
+            brightness = (r + g + b) / 3
+            if brightness > 230:  # 跳过白色（盘子/桌布）
+                continue
+            if brightness < 20:    # 跳过极暗
+                continue
+            total_sampled += 1
+            max_c, min_c = max(r, g, b), min(r, g, b)
+            sat = (max_c - min_c) / max_c if max_c > 0 else 0
+
+            if sat < 0.1:  # 灰/白/黑
+                if brightness < 80: color_bins['深灰/黑色'] += 1
+                else: color_bins['浅灰/白色'] += 1
+            elif r > g and r > b:
+                if g > 120: color_bins['金黄色/橙黄色'] += 1
+                elif r > 160: color_bins['红色/橙红色'] += 1
+                else: color_bins['深棕色/褐色'] += 1
+            elif g > r and g > b:
+                if g > 120: color_bins['绿色/黄绿色'] += 1
+                else: color_bins['深绿色'] += 1
+            elif b > r and b > g:
+                color_bins['蓝紫色'] += 1
+            elif r > 180 and g > 180 and b < 120:
+                color_bins['黄色/金色'] += 1
+            else:
+                color_bins['中性色/米色'] += 1
+
+        if total_sampled == 0:
+            return "图片过亮或过暗，无法分析"
+
+        # 平均颜色
+        valid_pixels = [(r, g, b) for r, g, b in pixels if 20 < (r+g+b)/3 < 230]
+        if valid_pixels:
+            avg_r = sum(p[0] for p in valid_pixels) // len(valid_pixels)
+            avg_g = sum(p[1] for p in valid_pixels) // len(valid_pixels)
+            avg_b = sum(p[2] for p in valid_pixels) // len(valid_pixels)
+        else:
+            avg_r = avg_g = avg_b = 128
+
+        # 亮度分布估算覆盖率
+        bright_count = sum(1 for r, g, b in pixels if (r+g+b)/3 > 180)
+        coverage_pct = round((1 - bright_count / len(pixels)) * 100)
+
+        # 构建文字描述
+        top_colors = color_bins.most_common(4)
+        color_desc = ', '.join(f'{name}({round(cnt/total_sampled*100)}%)' for name, cnt in top_colors)
+
+        return (
+            f"图片尺寸{w}x{h}, 食物覆盖率约{coverage_pct}%\n"
+            f"主色调: {color_desc}\n"
+            f"平均RGB: ({avg_r}, {avg_g}, {avg_b})\n"
+            f"色调特征: {'偏暖(金/红/棕)' if avg_r > avg_b + 20 else '偏冷(绿/蓝)' if avg_b > avg_r + 20 else '中性'}"
+        )
+
     def analyze_plate_waste(self, image_path):
-        """餐盘浪费分析"""
+        """餐盘浪费分析 — v2.6 PIL+DeepSeek混合方案"""
         if not self.available:
             return None
         try:
-            with open(image_path, 'rb') as f:
-                img_b64 = base64.b64encode(f.read()).decode('utf-8')
-            ext = os.path.splitext(image_path)[1].lower()
-            mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-                       '.png': 'image/png', '.webp': 'image/webp'}
-            media_type = mime_map.get(ext, 'image/jpeg')
+            # PIL提取图片特征
+            img_desc = self._describe_image(image_path)
 
+            prompt = (
+                "你是一个专业的美食识别助手。\n"
+                "以下是顾客用餐后餐盘的计算机视觉分析：\n\n"
+                f"{img_desc}\n\n"
+                "【任务】根据颜色和纹理特征，判断餐盘的食物剩余情况。\n"
+                "- 食物覆盖率<15%: empty(光盘), 15-35%: light(少量), 35-60%: moderate(中等), 60-80%: heavy(较多), >80%: full(几乎没吃)\n"
+                "- 根据颜色特征推断可能是什么食物（参考：金黄色→炸肉类，红褐色→红烧，白色→清蒸/白灼，绿色→蔬菜）\n\n"
+                "返回纯JSON（不要markdown）：\n"
+                '{"plate_status":"empty|light|moderate|heavy|full",'
+                '"overall_waste_percentage":数字(0-100),'
+                '"items":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                '"estimated_remaining_percentage":数字,"estimated_original_portion":"小份|中份|大份",'
+                '"visual_evidence":"颜色和特征依据"}],'
+                '"summary":"一句中文总结"}\n'
+                "基于颜色分析诚实推断，不确定的食物不要编造。"
+            )
             resp = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[{
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": (
-                            "你是一个专业的美食识别助手。这张照片是自助餐厅里一位食客的餐盘（用餐后）。"
-                            "请识别餐盘上还剩下哪些食物，估计剩余量。\n\n"
-                            "返回纯JSON（不要markdown）：\n"
-                            '{"plate_status":"empty|light|moderate|heavy|full",'
-                            '"overall_waste_percentage":数字(0-100),'
-                            '"items":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
-                            '"estimated_remaining_percentage":数字,"estimated_original_portion":"小份|中份|大份",'
-                            '"visual_evidence":"看到了什么"}],'
-                            '"summary":"一句中文总结"}\n'
-                            "只列出你实际看到的食物。诚实识别。"
-                        )},
-                        {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{img_b64}"}}
-                    ]
-                }],
-                max_tokens=2000, temperature=0.1
+                model="deepseek-v4-pro",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=self.max_tokens, temperature=0.1
             )
             text = resp.choices[0].message.content.strip()
             if text.startswith('```'): text = text.split('\n', 1)[1]; text = text[:-3] if text.endswith('```') else text
@@ -891,7 +964,10 @@ class DeepSeekVision:
             return None
 
     def identify_buffet_dishes(self, image_paths):
-        """自助餐台菜品识别 — v2.6方案B: 纯闭集，只匹配12道固定菜品库"""
+        """
+        自助餐台菜品识别 — v2.6 PIL+DeepSeek混合方案
+        PIL提取图片颜色/纹理特征 → 文字描述 → DeepSeek匹配12道菜品库
+        """
         if not self.available:
             return None
         try:
@@ -904,46 +980,49 @@ class DeepSeekVision:
                 features = d.get('visual_features', '')
                 lib_text += f"- {d['name']} | {d['category']} | {d['cooking']} | {d['calories']}kcal"
                 if features:
-                    lib_text += f" | 视觉特征: {features[:80]}"
+                    lib_text += f" | 特征: {features[:100]}"
                 lib_text += "\n"
 
-            content = [{"type": "text", "text": (
-                lib_text + "\n"
-                f"以上是固定菜品库（共{len(lib_dishes)}道菜）。以下是自助餐厅{len(image_paths)}个餐台区域的照片。\n\n"
-                "【核心规则 — 必须遵守】\n"
-                "1. 你只能从上述菜品库中识别菜品，严禁编造库外菜名\n"
-                "2. 每张照片最多匹配2道菜。如果只看到1道，只返回1道\n"
-                "3. 如果照片中的食物无法匹配菜品库中的任何一道，放入 unmatched_items\n"
-                "4. 宁缺毋滥：不确定的匹配不要列出\n\n"
-                "返回纯JSON：\n"
-                '{"matched_dishes":[{"name":"菜品库中的菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
-                '"cooking":"炒|蒸|煮|炸|烤|炖|凉拌|生食","quantity":剩余份数(1-15),'
-                '"calories":number,"protein":number,"carbs":number,"fat":number,'
-                '"fiber":number,"sodium":number,"gi":number,"original_price":number,'
-                '"confidence":"high|medium|low","visual_evidence":"匹配依据"}],'
-                '"unmatched_items":["无法匹配的食物描述"],'
-                '"zones_detected":["区域"]}'
-            )}]
+            # v2.6: PIL提取图片特征 → 文字描述
+            image_descs = []
             for i, path in enumerate(image_paths):
-                with open(path, 'rb') as f:
-                    img_b64 = base64.b64encode(f.read()).decode('utf-8')
-                ext = os.path.splitext(path)[1].lower()
-                mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}
-                media_type = mime_map.get(ext, 'image/jpeg')
-                content.append({"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{img_b64}"}})
+                desc = self._describe_image(path)
+                image_descs.append(f"--- 照片{i+1}的PIL分析 ---\n{desc}")
+
+            prompt = (
+                lib_text + "\n"
+                f"以上是固定菜品库（共{len(lib_dishes)}道菜）。\n"
+                f"酒店员工拍摄了{len(image_paths)}张自助餐台照片。\n"
+                "由于系统使用PIL进行图像分析，以下是每张照片的计算机视觉特征描述：\n\n"
+                + "\n".join(image_descs) + "\n\n"
+                "【任务】根据上述颜色和纹理特征，从固定菜品库中匹配最可能的菜品。\n"
+                "【核心规则】\n"
+                "1. 只能从菜品库中匹配，严禁编造库外菜名\n"
+                "2. 每张照片最多匹配2道菜\n"
+                "3. 利用颜色特征判断：金黄色→炸/烤肉类, 红褐色→红烧/酱炒, 白色→清蒸/白灼, 绿色→蔬菜\n"
+                "4. 不确定的匹配放入 unmatched_items\n\n"
+                "返回纯JSON：\n"
+                '{"matched_dishes":[{"name":"菜品库中的菜名","category":"分类","cooking":"烹饪方式",'
+                '"quantity":份数,"calories":热量,"protein":蛋白质,"carbs":碳水,"fat":脂肪,'
+                '"fiber":纤维,"sodium":钠,"gi":GI值,"original_price":原价,'
+                '"confidence":"high|medium","visual_evidence":"颜色和特征匹配依据"}],'
+                '"unmatched_items":["无法匹配的描述"],"zones_detected":["区域"]}'
+            )
 
             resp = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[{"role": "user", "content": content}],
-                max_tokens=3000, temperature=0.1
+                model="deepseek-v4-pro",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=self.max_tokens, temperature=0.1
             )
             text = resp.choices[0].message.content.strip()
+            if not text:
+                return None
             if text.startswith('```'): text = text.split('\n', 1)[1]; text = text[:-3] if text.endswith('```') else text
             result = json.loads(text)
             # v2.6方案B: 标准化输出格式
             if 'identified_dishes' not in result:
                 result['identified_dishes'] = result.get('matched_dishes', result.get('dishes', []))
-            # 只保留 confidence 不为 'low' 的匹配（容忍 medium）
+            # 只保留 confidence 不为 'low' 的匹配
             result['identified_dishes'] = [
                 d for d in result['identified_dishes']
                 if d.get('confidence', 'medium') != 'low'
