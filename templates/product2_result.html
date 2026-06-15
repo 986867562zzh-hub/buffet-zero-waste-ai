@@ -140,7 +140,7 @@
                             <span>热量</span><strong>{{ rec.total_nutrition.calories }} kcal</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-danger" style="width:{{ (rec.total_nutrition.calories / 800 * 100)|min(100) }}%"></div>
+                            <div class="progress-bar bg-danger" style="width:{{ [rec.total_nutrition.calories / 800 * 100, 100]|min }}%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -148,7 +148,7 @@
                             <span>蛋白质</span><strong>{{ rec.total_nutrition.protein }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-primary" style="width:{{ (rec.total_nutrition.protein / 50 * 100)|min(100) }}%"></div>
+                            <div class="progress-bar bg-primary" style="width:{{ [rec.total_nutrition.protein / 50 * 100, 100]|min }}%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -156,7 +156,7 @@
                             <span>碳水化合物</span><strong>{{ rec.total_nutrition.carbs }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-warning" style="width:{{ (rec.total_nutrition.carbs / 80 * 100)|min(100) }}%"></div>
+                            <div class="progress-bar bg-warning" style="width:{{ [rec.total_nutrition.carbs / 80 * 100, 100]|min }}%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar mb-2">
@@ -164,7 +164,7 @@
                             <span>脂肪</span><strong>{{ rec.total_nutrition.fat }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-info" style="width:{{ (rec.total_nutrition.fat / 30 * 100)|min(100) }}%"></div>
+                            <div class="progress-bar bg-info" style="width:{{ [rec.total_nutrition.fat / 30 * 100, 100]|min }}%"></div>
                         </div>
                     </div>
                     <div class="nutrition-bar">
@@ -172,7 +172,7 @@
                             <span>膳食纤维</span><strong>{{ rec.total_nutrition.fiber }}g</strong>
                         </div>
                         <div class="progress" style="height:6px;">
-                            <div class="progress-bar bg-success" style="width:{{ (rec.total_nutrition.fiber / 15 * 100)|min(100) }}%"></div>
+                            <div class="progress-bar bg-success" style="width:{{ [rec.total_nutrition.fiber / 15 * 100, 100]|min }}%"></div>
                         </div>
                     </div>
                 </div>
