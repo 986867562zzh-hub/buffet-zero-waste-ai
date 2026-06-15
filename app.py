@@ -1457,7 +1457,7 @@ class AIEngine:
         return self.smart.identify_buffet_dishes(image_paths)
 
     def match_meals(self, dietary_type, allergies, available_dishes):
-        """智能搭配引擎（与AI模式无关，使用规则引擎）"""
+        """智能搭配引擎 v2.4 — P1~P4 改进版"""
         DIETARY_CONFIGS = {
             "fat_loss": {
                 "label": "减脂瘦身", "max_cal": 550, "min_protein": 25,
@@ -1534,64 +1534,196 @@ class AIEngine:
             }
         }
 
-        config = DIETARY_CONFIGS.get(dietary_type, DIETARY_CONFIGS["quick_work_lunch"])
+        config = DIETARY_CONFIGS.get(dietary_type, DIETARY_CONFIGS["comfort_food"])
 
-        def dish_matches(dish):
+        # ---- P2: 过敏过滤 ----
+        allergy_keywords = []
+        if allergies:
+            allergy_keywords = [a.strip().lower() for a in allergies.replace('，', ',').split(',') if a.strip()]
+
+        # ---- P1: 逐级放宽过滤 ----
+        def dish_matches(dish, skip_cook=False, skip_gi_na=False, skip_names=False):
             name = dish.get('name', '')
             cat = dish.get('category', '')
             cook = dish.get('cooking', '')
+
+            # P2: 过敏检查（始终执行）
+            for kw in allergy_keywords:
+                if kw in name.lower() or kw in cat.lower():
+                    return False, 'allergy'
+
             if 'avoid_cat' in config and cat in config['avoid_cat']:
-                return False
-            if 'avoid_names' in config:
+                return False, 'category'
+            if not skip_names and 'avoid_names' in config:
                 for kw in config['avoid_names']:
                     if kw in name:
-                        return False
-            if 'avoid_cook' in config and cook in config['avoid_cook']:
-                return False
-            if 'max_gi' in config and dish.get('gi', 0) > config['max_gi']:
-                return False
-            if 'max_sodium' in config and dish.get('sodium', 0) > config['max_sodium']:
-                return False
-            return True
+                        return False, 'name_keyword'
+            if not skip_cook and 'avoid_cook' in config and cook in config['avoid_cook']:
+                return False, 'cooking'
+            if not skip_gi_na:
+                if 'max_gi' in config and dish.get('gi', 0) > config['max_gi']:
+                    return False, 'gi'
+                if 'max_sodium' in config and dish.get('sodium', 0) > config['max_sodium']:
+                    return False, 'sodium'
+            return True, ''
 
-        candidates = [d for d in available_dishes if dish_matches(d)]
+        candidates = []
+        relaxed_dishes = set()  # 记录被放宽规则收录的菜
+
+        for d in available_dishes:
+            ok, _ = dish_matches(d)
+            if ok:
+                candidates.append(d)
+
+        # P1: 候选不足4道时逐级放宽
+        relaxation_level = 0
         if len(candidates) < 4:
-            candidates = available_dishes.copy()
+            # Level 1: 放宽烹饪方式
+            l1 = []
+            for d in available_dishes:
+                if d in candidates:
+                    l1.append(d)
+                else:
+                    ok, reason = dish_matches(d, skip_cook=True)
+                    if ok and reason != 'allergy':
+                        l1.append(d)
+                        relaxed_dishes.add(d.get('name', ''))
+            if len(l1) < 4:
+                # Level 2: 再放宽 GI/钠
+                l2 = []
+                for d in available_dishes:
+                    if d in l1:
+                        l2.append(d)
+                    else:
+                        ok, reason = dish_matches(d, skip_cook=True, skip_gi_na=True)
+                        if ok and reason != 'allergy':
+                            l2.append(d)
+                            relaxed_dishes.add(d.get('name', ''))
+                if len(l2) < 4:
+                    # Level 3: 只保留过敏 + 分类过滤
+                    l3 = []
+                    for d in available_dishes:
+                        ok, reason = dish_matches(d, skip_cook=True, skip_gi_na=True, skip_names=True)
+                        if ok and reason != 'allergy':
+                            l3.append(d)
+                            relaxed_dishes.add(d.get('name', ''))
+                    candidates = l3
+                    relaxation_level = 3
+                else:
+                    candidates = l2
+                    relaxation_level = 2
+            else:
+                candidates = l1
+                relaxation_level = 1
 
+        # ---- P3: 真实营养合规评分 ----
+        def calc_suitability(selected_dishes):
+            """基于实际营养合规计算适配度（0-100）"""
+            tot_cal = sum(s.get('calories', 0) for s in selected_dishes)
+            tot_protein = sum(s.get('protein', 0) for s in selected_dishes)
+            tot_carbs = sum(s.get('carbs', 0) for s in selected_dishes)
+            tot_fat = sum(s.get('fat', 0) for s in selected_dishes)
+            tot_fiber = sum(s.get('fiber', 0) for s in selected_dishes)
+
+            score = 100
+            # 热量检查
+            if 'max_cal' in config and tot_cal > config['max_cal']:
+                over_pct = (tot_cal - config['max_cal']) / config['max_cal']
+                score -= min(25, int(over_pct * 50))
+            if 'min_cal' in config and tot_cal < config['min_cal']:
+                under_pct = (config['min_cal'] - tot_cal) / config['min_cal']
+                score -= min(15, int(under_pct * 30))
+            # 蛋白质
+            if 'min_protein' in config and tot_protein < config['min_protein']:
+                under_pct = (config['min_protein'] - tot_protein) / config['min_protein']
+                score -= min(20, int(under_pct * 40))
+            # 碳水
+            if 'max_carbs' in config and tot_carbs > config['max_carbs']:
+                over_pct = (tot_carbs - config['max_carbs']) / config['max_carbs']
+                score -= min(15, int(over_pct * 30))
+            # 脂肪
+            if 'max_fat' in config and tot_fat > config['max_fat']:
+                over_pct = (tot_fat - config['max_fat']) / max(config['max_fat'], 1)
+                score -= min(15, int(over_pct * 30))
+            # 纤维
+            if 'min_fiber' in config and tot_fiber < config['min_fiber']:
+                under_pct = (config['min_fiber'] - tot_fiber) / max(config['min_fiber'], 1)
+                score -= min(10, int(under_pct * 20))
+
+            return max(35, score)
+
+        # ---- 候选排序 ----
         def score_dish(dish):
-            score = 0
+            s = 0
             if 'prefer_cat' in config and dish.get('category') in config['prefer_cat']:
-                score += 3
+                s += 3
             if 'prefer_cook' in config and dish.get('cooking') in config['prefer_cook']:
-                score += 2
-            score += min(dish.get('quantity', 1), 5) * 0.5
-            return score
+                s += 2
+            s += min(dish.get('quantity', 1), 5) * 0.5
+            return s
 
         candidates.sort(key=score_dish, reverse=True)
 
-        # 生成3套方案
-        recommendations = []
-        for combo_idx in range(3):
-            random.seed(42 + combo_idx + hash(dietary_type) % 1000)
-            mains = [d for d in candidates if d.get('category') in ['主食']]
-            proteins = [d for d in candidates if d.get('category') in ['肉类', '海鲜', '蔬菜'] and d.get('protein', 0) > 5]
-            sides = [d for d in candidates if d.get('category') in ['蔬菜', '汤品']]
-            extras = [d for d in candidates if d.get('category') in ['水果', '甜点', '汤品']]
+        # ---- P4: 3套餐差异化策略 ----
+        mains = [d for d in candidates if d.get('category') in ['主食']]
+        proteins = [d for d in candidates if d.get('category') in ['肉类', '海鲜', '蔬菜'] and d.get('protein', 0) > 5]
+        sides = [d for d in candidates if d.get('category') in ['蔬菜', '汤品']]
+        extras = [d for d in candidates if d.get('category') in ['水果', '甜点', '汤品']]
+
+        def build_combo(strategy, used_dishes=None):
+            """构建套餐：strategy='balanced'|'cheapest'|'varied'"""
+            if used_dishes is None:
+                used_dishes = set()
+
+            if strategy == 'balanced':
+                # 精选：营养最优
+                m = mains[:1] if mains else []
+                p = proteins[:2] if proteins else []
+                s = sides[:1] if sides else []
+                e = extras[:1] if extras else []
+            elif strategy == 'cheapest':
+                # 实惠：价格最低
+                mains_by_price = sorted(mains, key=lambda x: x.get('original_price', 999))
+                prots_by_price = sorted(proteins, key=lambda x: x.get('original_price', 999))
+                sides_by_price = sorted(sides, key=lambda x: x.get('original_price', 999))
+                extras_by_price = sorted(extras, key=lambda x: x.get('original_price', 999))
+                m = mains_by_price[:1]
+                p = prots_by_price[:2]
+                s = sides_by_price[:1]
+                e = extras_by_price[:1]
+            else:
+                # 风味：避开已用的菜
+                m = [d for d in mains if d.get('name') not in used_dishes][:1]
+                p = [d for d in proteins if d.get('name') not in used_dishes][:2]
+                s = [d for d in sides if d.get('name') not in used_dishes][:1]
+                e = [d for d in extras if d.get('name') not in used_dishes][:1]
 
             selected = []
-            if mains:
-                selected.append(random.choice(mains[:3]))
-            if proteins:
-                for _ in range(random.randint(1, 2)):
-                    pool = [p for p in proteins[:5] if p not in selected]
-                    if pool:
-                        selected.append(random.choice(pool))
-            side_pool = [s for s in sides[:5] if s not in selected]
-            if side_pool:
-                selected.append(random.choice(side_pool))
-            extra_pool = [e for e in extras[:4] if e not in selected]
-            if extra_pool and random.random() > 0.4:
-                selected.append(random.choice(extra_pool))
+            if m: selected.append(m[0])
+            for pi in p:
+                if pi not in selected:
+                    selected.append(pi)
+            if s and s[0] not in selected:
+                selected.append(s[0])
+            if e and e[0] not in selected:
+                selected.append(e[0])
+            return selected
+
+        strategies = [
+            ('balanced', '精选套餐', f'{config.get("label", "")} 营养最优搭配'),
+            ('cheapest', '超值套餐', f'{config.get("label", "")} 性价比之选'),
+            ('varied', '风味套餐', f'{config.get("label", "")} 口味多样组合'),
+        ]
+
+        used_names = set()
+        recommendations = []
+        for i, (strategy, suffix, desc) in enumerate(strategies):
+            selected = build_combo(strategy, used_names)
+            for s in selected:
+                used_names.add(s.get('name', ''))
+
+            if not selected:
+                selected = build_combo('balanced')  # fallback
 
             total_cal = sum(s.get('calories', 0) for s in selected)
             total_protein = sum(s.get('protein', 0) for s in selected)
@@ -1611,30 +1743,30 @@ class AIEngine:
                 time_disc = 0.65
 
             total_discounted = round(total_original * time_disc, 1)
-            suitability = 85 + random.randint(0, 14)
+            suitability = calc_suitability(selected)
 
-            names = [
-                f"【推荐】{config.get('label', '均衡')}精选套餐",
-                f"【实惠】{config.get('label', '均衡')}超值套餐",
-                f"【特色】{config.get('label', '均衡')}风味套餐"
-            ]
-            descs = [
-                f"根据您的{config.get('label', '饮食')}需求精心搭配的最佳方案",
-                f"性价比最高的搭配方案，价格更优惠",
-                f"口味独特的搭配方案，给您不一样的美食体验"
-            ]
-
-            recommendations.append({
-                "id": combo_idx + 1, "name": names[combo_idx],
-                "description": descs[combo_idx],
-                "items": [{
-                    "name": s.get('name', '未知菜品'),
+            item_list = []
+            for s in selected:
+                name = s.get('name', '未知')
+                was_relaxed = name in relaxed_dishes
+                item_list.append({
+                    "name": name,
                     "category": s.get('category', '其他'),
-                    "role": "主食" if s.get('category') == '主食' else "主菜" if s.get('category') in ['肉类','海鲜'] else "配菜" if s.get('category') in ['蔬菜'] else "汤品" if s.get('category') == '汤品' else "附加",
+                    "role": ("主食" if s.get('category') == '主食'
+                        else "主菜" if s.get('category') in ['肉类', '海鲜']
+                        else "配菜" if s.get('category') in ['蔬菜']
+                        else "汤品" if s.get('category') == '汤品'
+                        else "附加"),
                     "original_price": s.get('original_price', 25),
                     "discounted_price": round(s.get('original_price', 25) * time_disc, 1),
-                    "reason": f"{s.get('cooking','烹饪')}方式，{config.get('label','饮食')}需求适配"
-                } for s in selected],
+                    "reason": f"{'⚠️放宽规则·' if was_relaxed else ''}{s.get('cooking','')}方式",
+                })
+
+            recommendations.append({
+                "id": i + 1,
+                "name": f"【{suffix}】",
+                "description": desc,
+                "items": item_list,
                 "total_nutrition": {
                     "calories": total_cal, "protein": round(total_protein, 1),
                     "carbs": round(total_carbs, 1), "fat": round(total_fat, 1),
@@ -1643,14 +1775,17 @@ class AIEngine:
                 "total_original_price": total_original,
                 "total_discounted_price": total_discounted,
                 "discount_rate": f"{int(time_disc * 100)}折",
-                "suitability_score": suitability
+                "suitability_score": suitability,
+                "relaxed": any(s.get('name', '') in relaxed_dishes for s in selected)
             })
 
         return {
             "dietary_label": config.get('label', '均衡饮食'),
+            "relaxation_level": relaxation_level,
             "recommendations": recommendations,
             "available_count": len(candidates),
-            "total_leftover_count": len(available_dishes)
+            "total_leftover_count": len(available_dishes),
+            "allergies_filtered": bool(allergy_keywords)
         }
 
     # ===== 餐盘浪费分析（产品一保留兼容） =====
