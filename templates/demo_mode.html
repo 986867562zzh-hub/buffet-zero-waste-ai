@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}演示模式 - 自助餐热量追踪{% endblock %}
+{% block title %}{{ _('demo.title') }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">首页</a></li>
-            <li class="breadcrumb-item active">🎬 演示模式</li>
+            <li class="breadcrumb-item"><a href="/">{{ _('breadcrumb.home') }}</a></li>
+            <li class="breadcrumb-item active">{{ _('demo.badge') }}</li>
         </ol>
     </nav>
 
     <div class="text-center mb-4">
-        <span class="badge bg-warning text-dark fs-6 px-3 py-2">🎬 演示模式</span>
-        <h4 class="mt-2">自助餐热量追踪 — 完整演示</h4>
-        <p class="text-muted">模拟一位顾客在自助餐厅的真实用餐流程</p>
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ _('demo.badge') }}</span>
+        <h4 class="mt-2">{{ _('demo.heading') }}</h4>
+        <p class="text-muted">{{ _('demo.desc') }}</p>
     </div>
 
     <div class="row g-4">
@@ -21,20 +21,20 @@
         <div class="col-lg-4 reveal reveal-left">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-header bg-warning text-dark">
-                    <h6 class="mb-0"><i class="fas fa-list-ol me-2"></i>演示步骤</h6>
+                    <h6 class="mb-0"><i class="fas fa-list-ol me-2"></i>{{ _('demo.steps_title') }}</h6>
                 </div>
                 <div class="card-body p-2">
                     <div class="demo-steps">
                         {% for step in demo_steps %}
                         <div class="demo-step-item p-3 rounded-3 mb-2 {% if loop.first %}active{% endif %}"
-                             id="step-indicator-{{ loop.index0 }}"
+                             id="step-indicator-{{ step.idx }}"
                              style="cursor:pointer; transition:all 0.3s;"
-                             onclick="goToStep({{ loop.index0 }})">
+                             onclick="goToStep({{ step.idx }})">
                             <div class="d-flex align-items-center">
                                 <div class="step-num me-3">{{ loop.index }}</div>
                                 <div>
-                                    <strong>{{ step.title }}</strong>
-                                    <div class="small text-muted">{{ step.desc }}</div>
+                                    <strong>{{ _('demo.step%s_title' % step.idx) }}</strong>
+                                    <div class="small text-muted">{{ _('demo.step%s_desc' % step.idx) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -46,7 +46,7 @@
             <!-- 热量累积 -->
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
-                    <h6 class="text-muted mb-2">🔥 累积热量</h6>
+                    <h6 class="text-muted mb-2">{{ _('demo.calorie_label') }}</h6>
                     <div class="calorie-ring-wrapper" style="width:160px; height:160px; margin:0 auto;">
                         <svg class="calorie-ring-svg" viewBox="0 0 200 200">
                             <circle class="ring-bg" cx="100" cy="100" r="85" fill="none" stroke="#e9ecef" stroke-width="14"/>
@@ -62,7 +62,7 @@
                         </div>
                     </div>
                     <div id="demoReminder" class="mt-2 d-none">
-                        <span class="badge bg-danger">⚠️ 接近阈值</span>
+                        <span class="badge bg-danger">{{ _('demo.warning') }}</span>
                     </div>
                 </div>
             </div>
@@ -73,22 +73,21 @@
             <div id="demo-content">
                 {% for step in demo_steps %}
                 <div class="demo-content-panel {% if not loop.first %}d-none{% endif %}"
-                     id="content-step-{{ loop.index0 }}">
+                     id="content-step-{{ step.idx }}">
                     <div class="card border-0 shadow-lg mb-3">
                         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <span class="badge bg-warning text-dark me-2">Step {{ loop.index }}</span>
-                                {{ step.title }}
+                                <span class="badge bg-warning text-dark me-2">{{ _('demo.step_badge') }}{{ loop.index }}</span>
+                                {{ _('demo.step%s_title' % step.idx) }}
                             </h5>
-                            <span class="text-muted small">{{ step.desc }}</span>
+                            <span class="text-muted small">{{ _('demo.step%s_desc' % step.idx) }}</span>
                         </div>
                         <div class="card-body text-center">
-                            <!-- 演示图片 -->
                             <div class="demo-image-container mb-3" style="position:relative; background:#f8f9fa; border-radius:12px; padding:20px; min-height:280px; display:flex; align-items:center; justify-content:center;">
                                 {% if step.dish_ids|length == 1 %}
                                 <img src="{{ step.ref_image }}"
                                      style="max-width:100%; max-height:300px; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.1);"
-                                     alt="{{ step.identify_name }}">
+                                     alt="{{ step.identify_name_zh }}">
                                 {% else %}
                                 <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
                                     {% for img in step.ref_images %}
@@ -96,63 +95,58 @@
                                     {% endfor %}
                                 </div>
                                 {% endif %}
-                                <!-- 识别结果标注 -->
                                 <div class="demo-identify-tag" style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(40,167,69,0.95); color:white; padding:8px 20px; border-radius:20px; font-weight:bold; font-size:0.95rem;">
-                                    ✅ AI识别：{{ step.identify_name }}
+                                    {{ _('demo.ai_identified') }}{{ step.identify_name_zh if lang != 'en' else step.identify_name_en }}
                                     <span class="ms-2">🔥 {{ step.calories }} kcal</span>
                                 </div>
                             </div>
 
-                            <!-- 识别详情 -->
                             <div class="row g-2 text-start">
                                 <div class="col-md-6">
                                     <div class="p-2 bg-light rounded-2">
-                                        <small class="text-muted">菜品</small><br>
-                                        <strong>{{ step.identify_name }}</strong>
+                                        <small class="text-muted">{{ _('demo.dish_label') }}</small><br>
+                                        <strong>{{ step.identify_name_zh if lang != 'en' else step.identify_name_en }}</strong>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="p-2 bg-light rounded-2">
-                                        <small class="text-muted">分类</small><br>
-                                        <span class="badge bg-secondary">{{ step.category }}</span>
+                                        <small class="text-muted">{{ _('demo.cat_label') }}</small><br>
+                                        <span class="badge bg-secondary">{{ step.category if lang != 'en' else step.category_en }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="p-2 bg-light rounded-2">
-                                        <small class="text-muted">热量</small><br>
+                                        <small class="text-muted">{{ _('demo.cal_label') }}</small><br>
                                         <strong class="text-danger">{{ step.calories }} kcal</strong>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 本轮累积 -->
-                            <div class="alert alert-info mt-3 mb-0 py-2">
+                            <div class="alert alert-info mt-3 mb-0 py-2" id="cumulative-alert-{{ step.idx }}">
                                 {% if loop.first %}
-                                🔥 开始热量累积！本轮 <strong>{{ step.calories }} kcal</strong>，累计 <strong id="cumulative-display-{{ loop.index0 }}">{{ step.calories }} kcal</strong>
+                                {{ _('demo.cal_start') }}<strong>{{ step.calories }} kcal</strong>{{ _('demo.cumulative_label') }}<strong id="cumulative-display-{{ step.idx }}">{{ step.calories }} kcal</strong>
                                 {% else %}
-                                🔥 本轮 +<strong>{{ step.calories }} kcal</strong>，累计 <strong id="cumulative-display-{{ loop.index0 }}">0 kcal</strong>
+                                {{ _('demo.this_round') }}<strong>{{ step.calories }} kcal</strong>{{ _('demo.cumulative_label') }}<strong id="cumulative-display-{{ step.idx }}">0 kcal</strong>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <!-- 导航按钮 -->
                     <div class="d-flex justify-content-between">
                         {% if loop.first %}
                         <div></div>
                         {% else %}
-                        <button class="btn btn-outline-secondary btn-lg" onclick="goToStep({{ loop.index0 - 1 }})">
-                            <i class="fas fa-arrow-left me-2"></i>上一步
+                        <button class="btn btn-outline-secondary btn-lg" onclick="goToStep({{ step.idx - 1 }})">
+                            <i class="fas fa-arrow-left me-2"></i>{{ _('demo.prev_btn') }}
                         </button>
                         {% endif %}
-
                         {% if loop.last %}
                         <button class="btn btn-success btn-lg" onclick="showFinalReminder()">
-                            <i class="fas fa-check me-2"></i>完成演示
+                            <i class="fas fa-check me-2"></i>{{ _('demo.finish_btn') }}
                         </button>
                         {% else %}
-                        <button class="btn btn-warning btn-lg" onclick="goToStep({{ loop.index0 + 1 }})">
-                            下一步<i class="fas fa-arrow-right ms-2"></i>
+                        <button class="btn btn-warning btn-lg" onclick="goToStep({{ step.idx + 1 }})">
+                            {{ _('demo.next_btn') }}<i class="fas fa-arrow-right ms-2"></i>
                         </button>
                         {% endif %}
                     </div>
@@ -172,28 +166,22 @@
             <div class="character-body">
                 <div class="belly"><div class="belly-shine"></div></div>
                 <div class="face">
-                    <div class="eye left-eye"></div>
-                    <div class="eye right-eye"></div>
-                    <div class="blush left-blush"></div>
-                    <div class="blush right-blush"></div>
+                    <div class="eye left-eye"></div><div class="eye right-eye"></div>
+                    <div class="blush left-blush"></div><div class="blush right-blush"></div>
                     <div class="mouth"></div>
                 </div>
-                <div class="arm left-arm"></div>
-                <div class="arm right-arm"></div>
-                <div class="leg left-leg"></div>
-                <div class="leg right-leg"></div>
+                <div class="arm left-arm"></div><div class="arm right-arm"></div>
+                <div class="leg left-leg"></div><div class="leg right-leg"></div>
             </div>
         </div>
-        <h4 class="reminder-title mt-3">🐉 饱饱啦~</h4>
-        <p class="reminder-msg" id="finalReminderMsg">
-            累积约 <strong id="finalTotalKcal">0</strong> kcal，再拿可能吃不下，别让我变成浪费的小可怜呀~ 💚
-        </p>
+        <h4 class="reminder-title mt-3">{{ _('demo.final_title') }}</h4>
+        <p class="reminder-msg" id="finalReminderMsg"></p>
         <div class="reminder-calorie-info">
             <span class="badge bg-danger fs-6" id="finalCalorieBadge">0 / 1800 kcal</span>
         </div>
         <div class="reminder-actions">
-            <button class="btn btn-success btn-lg" onclick="closeFinalReminder()">好的，我知道啦</button>
-            <a href="/demo" class="btn btn-outline-warning"><i class="fas fa-redo me-1"></i>重新演示</a>
+            <button class="btn btn-success btn-lg" onclick="closeFinalReminder()">{{ _('demo.final_ok') }}</button>
+            <a href="/demo" class="btn btn-outline-warning"><i class="fas fa-redo me-1"></i>{{ _('demo.final_retry') }}</a>
         </div>
     </div>
 </div>
@@ -201,75 +189,67 @@
 
 {% block extra_scripts %}
 <script>
-// 所有步骤的累积热量数据
+var DEMO_LANG = '{{ lang }}';
+var DEMO_T = {
+    final_msg_1: '{{ _("demo.final_msg_1")|safe }}',
+    final_msg_2: '{{ _("demo.final_msg_2")|safe }}',
+    final_msg_3: '{{ _("demo.final_msg_3")|safe }}',
+};
+
 const stepCalories = [{% for s in demo_steps %}{{ s.calories }}{% if not loop.last %},{% endif %}{% endfor %}];
 const demoThreshold = {{ demo_threshold }};
 let currentStep = 0;
 
-// 初始化热量环
-function updateDemoRing(currentTotal, threshold) {
+function updateDemoRing(total, threshold) {
     const ring = document.getElementById('demoCalorieRing');
     const circumference = 2 * Math.PI * 85;
-    const ratio = Math.min(currentTotal / threshold, 1.0);
+    const ratio = Math.min(total / threshold, 1.0);
     ring.setAttribute('stroke-dasharray', (ratio * circumference) + ' ' + circumference);
     if (ratio >= 1.0) ring.setAttribute('stroke', '#ff4757');
     else if (ratio >= 0.75) ring.setAttribute('stroke', '#ffa502');
-
-    document.getElementById('demoCalorieTotal').textContent = currentTotal;
+    document.getElementById('demoCalorieTotal').textContent = total;
     document.getElementById('demoThreshold').textContent = '/ ' + threshold;
-    document.getElementById('finalTotalKcal').textContent = currentTotal;
-    document.getElementById('finalCalorieBadge').textContent = currentTotal + ' / ' + threshold + ' kcal';
-
-    if (currentTotal >= threshold * 0.85) {
+    document.getElementById('finalTotalKcal').textContent = total;
+    document.getElementById('finalCalorieBadge').textContent = total + ' / ' + threshold + ' kcal';
+    if (total >= threshold * 0.85) {
         document.getElementById('demoReminder').classList.remove('d-none');
     }
 }
 
-// 切换到指定步骤
-function goToStep(stepIndex) {
-    if (stepIndex < 0 || stepIndex >= stepCalories.length) return;
-    currentStep = stepIndex;
-
-    // 隐藏所有内容面板
+function goToStep(idx) {
+    if (idx < 0 || idx >= stepCalories.length) return;
+    currentStep = idx;
     document.querySelectorAll('.demo-content-panel').forEach(p => p.classList.add('d-none'));
-    document.getElementById('content-step-' + stepIndex).classList.remove('d-none');
-
-    // 更新步骤指示器
+    document.getElementById('content-step-' + idx).classList.remove('d-none');
     document.querySelectorAll('.demo-step-item').forEach((item, i) => {
-        item.classList.toggle('active', i <= stepIndex);
-        item.classList.toggle('completed', i < stepIndex);
+        item.classList.toggle('active', i <= idx);
+        item.classList.toggle('completed', i < idx);
     });
-
-    // 计算累计热量
     let cumulative = 0;
-    for (let i = 0; i <= stepIndex; i++) cumulative += stepCalories[i];
-
-    // 更新所有累积显示
+    for (let i = 0; i <= idx; i++) cumulative += stepCalories[i];
     for (let i = 0; i < stepCalories.length; i++) {
         let cum = 0;
         for (let j = 0; j <= i; j++) cum += stepCalories[j];
         const display = document.getElementById('cumulative-display-' + i);
         if (display) display.textContent = cum + ' kcal';
     }
-
     updateDemoRing(cumulative, demoThreshold);
-    document.getElementById('content-step-' + stepIndex).scrollIntoView({behavior:'smooth'});
-
-    // 达到最后一步自动弹出卡通提醒
-    if (stepIndex === stepCalories.length - 1) {
+    document.getElementById('content-step-' + idx).scrollIntoView({behavior:'smooth'});
+    if (idx === stepCalories.length - 1) {
         setTimeout(function() { showFinalReminder(); }, 800);
     }
 }
 
-// 显示最终提醒
 function showFinalReminder() {
     let cumulative = 0;
     for (let i = 0; i < stepCalories.length; i++) cumulative += stepCalories[i];
     updateDemoRing(cumulative, demoThreshold);
     var el = document.getElementById('finalReminder');
     el.classList.remove('d-none');
-    el.style.display = 'flex';  // 确保显示
-    // 🎉 演示完成撒花
+    el.style.display = 'flex';
+    var msgs = [DEMO_T.final_msg_1, DEMO_T.final_msg_2, DEMO_T.final_msg_3];
+    var msg = msgs[Math.floor(Math.random() * msgs.length)];
+    document.getElementById('finalReminderMsg').innerHTML = msg.replace('<strong>TOTAL</strong>', '<strong>' + cumulative + '</strong>');
     if (typeof Confetti !== 'undefined') {
         setTimeout(function() { Confetti.fire(5000); }, 400);
     }
@@ -281,17 +261,6 @@ function closeFinalReminder() {
     el.style.display = 'none';
 }
 
-// 页面加载初始化
-document.addEventListener('DOMContentLoaded', function() {
-    goToStep(0);
-    // 随机选一条提醒语
-    const msgs = [
-        '累积约 <strong>TOTAL</strong> kcal，再拿可能吃不下，别让我变成浪费的小可怜呀~ 💚',
-        '肚肚已经圆滚滚啦！<strong>TOTAL</strong> kcal 够啦，先吃完这些嘛~ 🥰',
-        '吃到八分饱最舒服哦~ <strong>TOTAL</strong> kcal 差不多啦！✨',
-    ];
-    const msg = msgs[Math.floor(Math.random() * msgs.length)];
-    document.getElementById('finalReminderMsg').innerHTML = msg;
-});
+document.addEventListener('DOMContentLoaded', function() { goToStep(0); });
 </script>
 {% endblock %}

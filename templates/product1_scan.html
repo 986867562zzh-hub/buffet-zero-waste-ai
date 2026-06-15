@@ -1,13 +1,13 @@
 ﻿{% extends "base.html" %}
-{% block title %}拍照识别 - 热量追踪 & 剩食评分{% endblock %}
+{% block title %}{{ _('p1.title') }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <!-- 面包屑 -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">首页</a></li>
-            <li class="breadcrumb-item active">产品一：智能拍照识别</li>
+            <li class="breadcrumb-item"><a href="/">{{ _('breadcrumb.home') }}</a></li>
+            <li class="breadcrumb-item active">{{ _('p1.breadcrumb') }}</li>
         </ol>
     </nav>
 
@@ -15,13 +15,13 @@
     <div class="mode-tabs mb-4">
         <div class="mode-tab active" id="tab-calorie" onclick="switchMode('calorie')">
             <span class="tab-icon">🔥</span>
-            <span>热量追踪</span>
-            <small class="tab-sub">拿菜前拍一拍</small>
+            <span>{{ _('p1.mode_calorie') }}</span>
+            <small class="tab-sub">{{ _('p1.mode_calorie_sub') }}</small>
         </div>
         <div class="mode-tab" id="tab-waste" onclick="switchMode('waste')">
             <span class="tab-icon">🍽️</span>
-            <span>剩食评分</span>
-            <small class="tab-sub">用餐后查浪费</small>
+            <span>{{ _('p1.mode_waste') }}</span>
+            <small class="tab-sub">{{ _('p1.mode_waste_sub') }}</small>
         </div>
     </div>
 
@@ -32,7 +32,7 @@
             <div class="col-lg-5 reveal reveal-left">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4 text-center">
-                        <h6 class="text-muted mb-3">🔥 本次用餐热量累积</h6>
+                        <h6 class="text-muted mb-3">{{ _('p1.calorie_title') }}</h6>
                         <!-- 热量圆环 -->
                         <div class="calorie-ring-wrapper">
                             <svg class="calorie-ring-svg" viewBox="0 0 200 200">

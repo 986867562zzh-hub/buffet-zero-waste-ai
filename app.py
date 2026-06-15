@@ -2650,79 +2650,24 @@ def demo_mode():
         refs = d.get('reference_images', [])
         return refs[0] if refs else ''
 
+    # v2.6 多语言: 只传数据，文字由模板的翻译键渲染
     demo_steps = [
-        {
-            'title': '第一盘：拿了一份锅包肉',
-            'desc': '刚进餐厅，先来份经典东北菜',
-            'dish_ids': ['guobaorou'],
-            'ref_image': get_ref('guobaorou'),
-            'identify_name': '锅包肉',
-            'category': '肉类',
-            'calories': 310
-        },
-        {
-            'title': '第二盘：蒜蓉西兰花 + 白灼虾',
-            'desc': '荤素搭配，营养均衡',
-            'dish_ids': ['suanrongxilanhua', 'baizhuoxia'],
-            'ref_images': [get_ref('suanrongxilanhua'), get_ref('baizhuoxia')],
-            'identify_name': '蒜蓉西兰花 + 白灼虾',
-            'category': '蔬菜/海鲜',
-            'calories': 167
-        },
-        {
-            'title': '第三盘：来点红烧肉',
-            'desc': '忍不住想尝尝硬菜',
-            'dish_ids': ['hongshaorou'],
-            'ref_image': get_ref('hongshaorou'),
-            'identify_name': '红烧肉',
-            'category': '肉类',
-            'calories': 380
-        },
-        {
-            'title': '第四盘：扬州炒饭走起',
-            'desc': '主食不能少',
-            'dish_ids': ['yangzhouchaoan'],
-            'ref_image': get_ref('yangzhouchaoan'),
-            'identify_name': '扬州炒饭',
-            'category': '主食',
-            'calories': 320
-        },
-        {
-            'title': '第五盘：番茄蛋花汤',
-            'desc': '喝碗汤暖暖胃',
-            'dish_ids': ['fanqiedanhuatang'],
-            'ref_image': get_ref('fanqiedanhuatang'),
-            'identify_name': '番茄蛋花汤',
-            'category': '汤品',
-            'calories': 55
-        },
-        {
-            'title': '第六盘：水果拼盘收尾',
-            'desc': '饭后水果，完美收官',
-            'dish_ids': ['shuiguopinpan'],
-            'ref_image': get_ref('shuiguopinpan'),
-            'identify_name': '水果拼盘',
-            'category': '水果',
-            'calories': 95
-        },
-        {
-            'title': '第七盘：又馋了，来份宫保鸡丁',
-            'desc': '没忍住又去拿了一盘...',
-            'dish_ids': ['gongbaojiding'],
-            'ref_image': get_ref('gongbaojiding'),
-            'identify_name': '宫保鸡丁',
-            'category': '肉类',
-            'calories': 245
-        },
-        {
-            'title': '第八盘：再夹两块红烧肉解馋',
-            'desc': '最后放纵一下！热量即将超标 ⚠️',
-            'dish_ids': ['hongshaorou'],
-            'ref_image': get_ref('hongshaorou'),
-            'identify_name': '红烧肉',
-            'category': '肉类',
-            'calories': 380
-        },
+        {'idx':0, 'dish_ids':['guobaorou'], 'ref_image':get_ref('guobaorou'),
+         'identify_name_zh':'锅包肉','identify_name_en':'Guobaorou (Crispy Pork)','category':'肉类','category_en':'Meat','calories':310},
+        {'idx':1, 'dish_ids':['suanrongxilanhua','baizhuoxia'], 'ref_images':[get_ref('suanrongxilanhua'),get_ref('baizhuoxia')],
+         'identify_name_zh':'蒜蓉西兰花 + 白灼虾','identify_name_en':'Broccoli + Shrimp','category':'蔬菜/海鲜','category_en':'Veg/Seafood','calories':167},
+        {'idx':2, 'dish_ids':['hongshaorou'], 'ref_image':get_ref('hongshaorou'),
+         'identify_name_zh':'红烧肉','identify_name_en':'Hongshaorou (Braised Pork)','category':'肉类','category_en':'Meat','calories':380},
+        {'idx':3, 'dish_ids':['yangzhouchaoan'], 'ref_image':get_ref('yangzhouchaoan'),
+         'identify_name_zh':'扬州炒饭','identify_name_en':'Yangzhou Fried Rice','category':'主食','category_en':'Staple','calories':320},
+        {'idx':4, 'dish_ids':['fanqiedanhuatang'], 'ref_image':get_ref('fanqiedanhuatang'),
+         'identify_name_zh':'番茄蛋花汤','identify_name_en':'Tomato Egg Soup','category':'汤品','category_en':'Soup','calories':55},
+        {'idx':5, 'dish_ids':['shuiguopinpan'], 'ref_image':get_ref('shuiguopinpan'),
+         'identify_name_zh':'水果拼盘','identify_name_en':'Fruit Platter','category':'水果','category_en':'Fruit','calories':95},
+        {'idx':6, 'dish_ids':['gongbaojiding'], 'ref_image':get_ref('gongbaojiding'),
+         'identify_name_zh':'宫保鸡丁','identify_name_en':'Kung Pao Chicken','category':'肉类','category_en':'Meat','calories':245},
+        {'idx':7, 'dish_ids':['hongshaorou'], 'ref_image':get_ref('hongshaorou'),
+         'identify_name_zh':'红烧肉','identify_name_en':'Braised Pork','category':'肉类','category_en':'Meat','calories':380},
     ]
 
     total = sum(s['calories'] for s in demo_steps)

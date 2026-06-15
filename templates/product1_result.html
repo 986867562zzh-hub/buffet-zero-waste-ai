@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if result.mode == 'calorie' %}热量追踪{% else %}剩食评分{% endif %} - 分析结果{% endblock %}
+{% block title %}{% if result.mode == 'calorie' %}{{ _('p1r.result_title_calorie') }}{% else %}{{ _('p1r.result_title_waste') }}{% endif %} - {{ _('breadcrumb.result') }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
