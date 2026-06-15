@@ -1536,10 +1536,13 @@ class AIEngine:
 
         config = DIETARY_CONFIGS.get(dietary_type, DIETARY_CONFIGS["comfort_food"])
 
-        # ---- P2: 过敏过滤 ----
+        # ---- P2: 过敏过滤（兼容字符串和列表） ----
         allergy_keywords = []
         if allergies:
-            allergy_keywords = [a.strip().lower() for a in allergies.replace('，', ',').split(',') if a.strip()]
+            if isinstance(allergies, list):
+                allergy_keywords = [a.strip().lower() for a in allergies if a.strip()]
+            else:
+                allergy_keywords = [a.strip().lower() for a in str(allergies).replace('，', ',').split(',') if a.strip()]
 
         # ---- P1: 逐级放宽过滤 ----
         def dish_matches(dish, skip_cook=False, skip_gi_na=False, skip_names=False):
