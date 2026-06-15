@@ -11,7 +11,7 @@
     </nav>
 
     <!-- 说明横幅 -->
-    <div class="card border-0 shadow-sm mb-4 bg-gradient-info text-white">
+    <div class="card border-0 shadow-sm mb-4 bg-gradient-info text-white reveal reveal-scale">
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -34,7 +34,7 @@
 
     <div class="row g-4">
         <!-- ===== 左侧：酒店拍照上传区 ===== -->
-        <div class="col-lg-5">
+        <div class="col-lg-5 reveal reveal-left">
             <div class="card border-0 shadow-lg h-100">
                 <div class="card-header bg-white border-0 pt-3">
                     <h5 class="mb-0">
@@ -84,7 +84,7 @@
         </div>
 
         <!-- ===== 右侧：识别结果 + 饮食需求选择 ===== -->
-        <div class="col-lg-7">
+        <div class="col-lg-7 reveal reveal-right">
             <!-- AI识别结果 -->
             <div class="card border-0 shadow-lg mb-3" id="identifiedDishesCard"
                  style="{% if not identified_dishes %}opacity:0.5;{% endif %}">
@@ -198,7 +198,7 @@
     </div>
 
     <!-- 拍照示例 -->
-    <div class="card border-0 shadow-sm mt-4">
+    <div class="card border-0 shadow-sm mt-4 reveal reveal-scale reveal-delay-2">
         <div class="card-body p-3">
             <h6 class="fw-bold mb-2"><i class="fas fa-info-circle me-2 text-info"></i>最佳拍照指南</h6>
             <div class="row g-2 small text-muted photo-guide-grid">

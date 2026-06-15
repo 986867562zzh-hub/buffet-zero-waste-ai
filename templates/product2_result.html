@@ -1,52 +1,5 @@
 {% extends "base.html" %}
-{% block title %}搭配结果 - 剩菜智能搭配<!-- 下单成功 Modal -->
-<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-body text-center p-5">
-                <div class="mb-3">
-                    <span style="font-size: 4rem;">🎉</span>
-                </div>
-                <h4 class="fw-bold mb-2" id="orderModalLabel">下单成功！</h4>
-                <p class="text-muted mb-3">感谢您为减少食物浪费做出贡献 🌱</p>
-                <div class="bg-light rounded-3 p-3 mb-3 text-start">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">订单号</span>
-                        <strong id="modalOrderId" class="text-success">BF-0000</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">套餐</span>
-                        <strong id="modalComboName">-</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">金额</span>
-                        <strong id="modalPrice" class="text-danger">¥0</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">取餐地点</span>
-                        <strong>酒店自助餐厅前台</strong>
-                    </div>
-                </div>
-                <div class="alert alert-warning py-2 small mb-3">
-                    <i class="fas fa-clock me-1"></i> 请于 <strong>30分钟</strong> 内到店取餐
-                </div>
-                <button type="button" class="btn btn-success btn-lg w-100" data-bs-dismiss="modal">
-                    <i class="fas fa-check me-1"></i>我知道了
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-function showOrderModal(comboName, price, orderId) {
-    document.getElementById("modalOrderId").textContent = orderId;
-    document.getElementById("modalComboName").textContent = comboName;
-    document.getElementById("modalPrice").textContent = "\u00a5" + price;
-    var modal = new bootstrap.Modal(document.getElementById("orderModal"));
-    modal.show();
-}
-</script>
-{% endblock %}
+{% block title %}搭配结果 - 剩菜智能搭配{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -59,7 +12,7 @@ function showOrderModal(comboName, price, orderId) {
     </nav>
 
     <!-- 需求信息条 -->
-    <div class="card border-0 shadow-sm mb-4 bg-light">
+    <div class="card border-0 shadow-sm mb-4 bg-light reveal reveal-scale">
         <div class="card-body py-3">
             <div class="row align-items-center">
                 <div class="col-md-4">
@@ -100,12 +53,12 @@ function showOrderModal(comboName, price, orderId) {
     </div>
 
     <!-- 推荐方案 -->
-    <h4 class="mb-3 fw-bold">
+    <h4 class="mb-3 fw-bold reveal reveal-left">
         <i class="fas fa-star text-warning me-2"></i>AI 为您推荐 {{ result.recommendations|length }} 套搭配方案
     </h4>
 
     {% for rec in result.recommendations %}
-    <div class="card border-0 shadow-lg mb-4 {% if rec.id == 1 %}border-success border-2{% endif %}">
+    <div class="card border-0 shadow-lg mb-4 {% if rec.id == 1 %}border-success border-2{% endif %} reveal {% if loop.index0 % 2 == 0 %}reveal-left{% else %}reveal-right{% endif %} reveal-delay-{{ loop.index0 }}">
         {% if rec.id == 1 %}
         <div class="position-absolute top-0 start-50 translate-middle">
             <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
@@ -249,6 +202,7 @@ function showOrderModal(comboName, price, orderId) {
         </a>
     </div>
 </div>
+
 <!-- 下单成功 Modal -->
 <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -287,13 +241,20 @@ function showOrderModal(comboName, price, orderId) {
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
 function showOrderModal(comboName, price, orderId) {
     document.getElementById("modalOrderId").textContent = orderId;
     document.getElementById("modalComboName").textContent = comboName;
-    document.getElementById("modalPrice").textContent = "\u00a5" + price;
+    document.getElementById("modalPrice").textContent = "¥" + price;
     var modal = new bootstrap.Modal(document.getElementById("orderModal"));
     modal.show();
+    // 🎉 下单成功撒花
+    if (typeof Confetti !== 'undefined') {
+        setTimeout(function() { Confetti.fire(4000); }, 300);
+    }
 }
 </script>
 {% endblock %}
