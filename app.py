@@ -514,10 +514,15 @@ class SmartImageAnalyzer:
             avg_brightness = sum(brightness_vals) / max(len(brightness_vals), 1)
             avg_saturation = sum(saturation_vals) / max(len(saturation_vals), 1)
 
+            # v2.6: 提高阈值防虚假识别，每张照片最多2道
+            photo_dish_count = 0
             for food_type, count in color_clusters.most_common(8):
                 coverage = count / total_colored * 100
-                if coverage < 3:
+                if coverage < 8:  # 从3%提高到8%，过滤微小色块
                     continue
+                if photo_dish_count >= 2:  # 每张照片上限2道
+                    break
+                photo_dish_count += 1
 
                 examples = []
                 for rule in SmartImageAnalyzer.COLOR_FOOD_MAP:
@@ -560,6 +565,8 @@ class SmartImageAnalyzer:
         identified = list(all_detected.values())
         # 按数量排序，剩余多的在前
         identified.sort(key=lambda d: d['quantity'], reverse=True)
+        # v2.6: 全局上限6道，防止虚假识别泛滥
+        identified = identified[:6]
 
         zones = list(set(
             "热菜/肉类区" if d['category'] in ['肉类', '海鲜'] and d['cooking'] in ['炒', '烤', '炖', '炸']
@@ -729,39 +736,56 @@ Important: Only list foods you ACTUALLY SEE in the photo. If the plate is mostly
                     "source": {"type": "base64", "media_type": media_type, "data": img_data}
                 })
 
+            # v2.6方案B: 构建菜品库上下文
+            try:
+                lib = get_dish_library()
+                lib_dishes = lib.list_dishes() if lib else []
+            except Exception:
+                lib_dishes = []
+            lib_text = "FIXED MENU — You can ONLY pick dishes from this list:\n"
+            for d in lib_dishes:
+                features = d.get('visual_features', '')
+                lib_text += f"- {d['name']} | {d['category']} | {d['cooking']} | {d['calories']}kcal"
+                if features:
+                    lib_text += f" | looks like: {features[:100]}"
+                lib_text += "\n"
+
             content.append({
                 "type": "text",
-                "text": """These are photos of leftover food at different buffet stations (taken by hotel staff at the end of meal service).
+                "text": lib_text + f"""
 
-Please identify ALL food dishes visible across these photos. For each dish, estimate:
-1. The name of the dish (in Chinese)
-2. The category (主食/肉类/海鲜/蔬菜/汤品/甜点/水果/饮品)
-3. How it's cooked (炒/蒸/烤/炸/炖/煮/凉拌/生食/冷制)
-4. Estimated remaining servings (1-15)
-5. Estimated nutrition per serving: calories, protein(g), carbs(g), fat(g), fiber(g)
-6. Estimated original price per serving (in RMB)
+These are photos of leftover food at different buffet stations (taken by hotel staff at the end of meal service).
 
-Return ONLY valid JSON (no markdown, no explanation):
-{
-  "dishes": [
-    {
-      "name": "...",
-      "category": "...",
-      "cooking": "...",
+CRITICAL RULES — YOU MUST FOLLOW:
+1. You can ONLY identify dishes from the FIXED MENU above. DO NOT invent any dish name not in the list.
+2. MAX 2 dishes PER PHOTO. If only 1 is visible, return 1.
+3. If a food item cannot be confidently matched to the fixed menu, put it in unmatched_items instead.
+4. WHEN IN DOUBT, LEAVE IT OUT. Honesty > completeness.
+
+For each matched dish, provide:
+1. name: exact match from the fixed menu
+2. confidence: "high" (very certain), "medium" (probable), or "low" (guess — DO NOT USE, put in unmatched_items instead)
+3. quantity: estimated remaining servings (1-15)
+4. visual_evidence: brief description of what you see that matches
+
+Return ONLY valid JSON (no markdown):
+{{
+  "matched_dishes": [
+    {{
+      "name": "exact dish name from fixed menu",
+      "category": "主食|肉类|海鲜|蔬菜|汤品|甜点|水果",
+      "cooking": "炒|蒸|烤|炸|炖|煮|凉拌|生食",
+      "confidence": "high|medium",
       "quantity": number,
-      "calories": number,
-      "protein": number,
-      "carbs": number,
-      "fat": number,
-      "fiber": number,
-      "sodium": number,
-      "gi": number,
-      "original_price": number
-    }
-  ]
-}
-
-IMPORTANT: ONLY include dishes you can ACTUALLY SEE in the photos. Do not make up or guess dishes that aren't visible."""
+      "calories": number, "protein": number, "carbs": number,
+      "fat": number, "fiber": number, "sodium": number,
+      "gi": number, "original_price": number,
+      "visual_evidence": "what confirms this match"
+    }}
+  ],
+  "unmatched_items": ["descriptions of food that doesn't match any menu item"],
+  "zones_detected": ["zone names"]
+}}"""
             })
 
             response = self.client.messages.create(
@@ -776,20 +800,24 @@ IMPORTANT: ONLY include dishes you can ACTUALLY SEE in the photos. Do not make u
                 result_text = result_text.split('\n', 1)[-1].rsplit('```', 1)[0]
             data = json.loads(result_text)
 
-            dishes = data.get('dishes', [])
+            # v2.6方案B: 解析闭集匹配结果
+            data = json.loads(result_text)
+            dishes = data.get('matched_dishes', data.get('dishes', []))
+            # 过滤低置信度匹配
+            dishes = [d for d in dishes if d.get('confidence', 'medium') != 'low']
             return {
                 "identified_dishes": dishes,
                 "total_count": len(dishes),
                 "photos_analyzed": len(image_paths),
                 "analysis_time": datetime.now().strftime('%H:%M:%S'),
-                "zones_detected": list(set(
+                "zones_detected": data.get('zones_detected', list(set(
                     "热菜区" if d.get('category') in ['肉类','海鲜'] and d.get('cooking') in ['炒','烤','炖','炸']
                     else "主食汤品区" if d.get('category') in ['主食','汤品']
                     else "冷菜甜点区" if d.get('category') in ['水果','甜点'] or d.get('cooking') in ['凉拌','生食','冷制']
                     else "蔬菜区"
                     for d in dishes
-                )),
-                "analysis_method": "real_ai_claude"
+                ))),
+                "analysis_method": "real_ai_claude_closed_set"
             }
         except Exception as e:
             print(f"[RealAI] Buffet identification error: {e}")
@@ -807,6 +835,7 @@ class DeepSeekVision:
         self.api_key = os.environ.get('DEEPSEEK_API_KEY', '')
         self.available = bool(self.api_key)
         self.client = None
+        self._library = None  # v2.6方案B: 延迟加载菜品库
         if self.available:
             try:
                 from openai import OpenAI
@@ -862,19 +891,38 @@ class DeepSeekVision:
             return None
 
     def identify_buffet_dishes(self, image_paths):
-        """自助餐台菜品识别"""
+        """自助餐台菜品识别 — v2.6方案B: 纯闭集，只匹配12道固定菜品库"""
         if not self.available:
             return None
         try:
+            # 构建菜品库上下文
+            if self._library is None:
+                self._library = get_dish_library()
+            lib_dishes = self._library.list_dishes() if self._library else []
+            lib_text = "【固定菜品库 — 你只能从以下12道菜中选择】\n"
+            for d in lib_dishes:
+                features = d.get('visual_features', '')
+                lib_text += f"- {d['name']} | {d['category']} | {d['cooking']} | {d['calories']}kcal"
+                if features:
+                    lib_text += f" | 视觉特征: {features[:80]}"
+                lib_text += "\n"
+
             content = [{"type": "text", "text": (
-                f"以下是自助餐厅{len(image_paths)}个餐台区域的照片。请识别每个区域有哪些菜品，估算剩余份数(1-15)。\n\n"
+                lib_text + "\n"
+                f"以上是固定菜品库（共{len(lib_dishes)}道菜）。以下是自助餐厅{len(image_paths)}个餐台区域的照片。\n\n"
+                "【核心规则 — 必须遵守】\n"
+                "1. 你只能从上述菜品库中识别菜品，严禁编造库外菜名\n"
+                "2. 每张照片最多匹配2道菜。如果只看到1道，只返回1道\n"
+                "3. 如果照片中的食物无法匹配菜品库中的任何一道，放入 unmatched_items\n"
+                "4. 宁缺毋滥：不确定的匹配不要列出\n\n"
                 "返回纯JSON：\n"
-                '{"dishes":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                '{"matched_dishes":[{"name":"菜品库中的菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
                 '"cooking":"炒|蒸|煮|炸|烤|炖|凉拌|生食","quantity":剩余份数(1-15),'
-                '"calories":估算热量(kcal),"protein":蛋白质(g),"carbs":碳水(g),"fat":脂肪(g),'
-                '"fiber":纤维(g),"sodium":钠(mg),"gi":GI值,"original_price":原价(元)}],'
-                '"zones_detected":["区域"]}\n'
-                "只列出你实际看到的菜品，不要编造。"
+                '"calories":number,"protein":number,"carbs":number,"fat":number,'
+                '"fiber":number,"sodium":number,"gi":number,"original_price":number,'
+                '"confidence":"high|medium|low","visual_evidence":"匹配依据"}],'
+                '"unmatched_items":["无法匹配的食物描述"],'
+                '"zones_detected":["区域"]}'
             )}]
             for i, path in enumerate(image_paths):
                 with open(path, 'rb') as f:
@@ -892,8 +940,14 @@ class DeepSeekVision:
             text = resp.choices[0].message.content.strip()
             if text.startswith('```'): text = text.split('\n', 1)[1]; text = text[:-3] if text.endswith('```') else text
             result = json.loads(text)
+            # v2.6方案B: 标准化输出格式
             if 'identified_dishes' not in result:
-                result['identified_dishes'] = result.get('dishes', [])
+                result['identified_dishes'] = result.get('matched_dishes', result.get('dishes', []))
+            # 只保留 confidence 不为 'low' 的匹配（容忍 medium）
+            result['identified_dishes'] = [
+                d for d in result['identified_dishes']
+                if d.get('confidence', 'medium') != 'low'
+            ]
             result['total_count'] = len(result.get('identified_dishes', []))
             result['photos_analyzed'] = len(image_paths)
             result['analysis_time'] = datetime.now().strftime('%H:%M:%S')
@@ -1064,8 +1118,10 @@ class ClosedSetVision:
                     '}\n\n'
                     '规则：\n'
                     '- 只从菜品库中匹配，不要编造\n'
+                    '- 每张照片最多匹配2道菜。如果只看到1道，就只返回1道\n'
                     '- 同一个菜可能出现在多张照片中，合并为一条记录取最大quantity\n'
-                    '- 每张照片对应一个自助餐台区域'
+                    '- 每张照片对应一个自助餐台区域\n'
+                    '- 宁少勿多：不确定的匹配直接放入 unmatched_items'
                 )
             })
 
@@ -1329,35 +1385,51 @@ class SmartMatcher:
             return None
 
     def match_buffet(self, image_paths):
-        """匹配自助餐台照片"""
+        """匹配自助餐台照片 — v2.6方案B: 纯闭集，高阈值+最佳匹配优先"""
         try:
             all_matches = {}
             for photo_idx, path in enumerate(image_paths):
                 query_features = self._extract_features(path)
                 if not query_features:
                     continue
+                # 收集每张照片的所有匹配分数
+                photo_matches = []
                 for dish_id, ref_features in self.profiles.items():
                     sim = self._compute_similarity(query_features, ref_features)
-                    if sim > 0.5:
-                        if dish_id not in all_matches or sim > all_matches[dish_id]['_sim']:
-                            dish = self.library.get_dish(dish_id)
-                            if dish:
-                                all_matches[dish_id] = {
-                                    'name': dish['name'], 'dish_id': dish_id,
-                                    'confidence': 'high' if sim > 0.7 else ('medium' if sim > 0.6 else 'low'),
-                                    'category': dish['category'], 'cooking': dish['cooking'],
-                                    'quantity': int(sim * 10 + 2),
-                                    'calories': dish['calories'], 'protein': dish['protein'],
-                                    'carbs': dish['carbs'], 'fat': dish['fat'],
-                                    'fiber': dish['fiber'], 'sodium': dish['sodium'],
-                                    'gi': dish['gi'], 'original_price': dish['original_price'],
-                                    '_sim': sim
-                                }
+                    if sim > 0.6:
+                        dish = self.library.get_dish(dish_id)
+                        if dish:
+                            photo_matches.append((sim, dish_id, dish))
+                # v2.6方案B: 单张照片保守匹配——宁少勿错
+                photo_matches.sort(key=lambda x: x[0], reverse=True)
+                max_per_photo = 1 if len(image_paths) <= 1 else 2  # 单图:1道, 多图:2道
+                kept_in_photo = 0
+                for sim, dish_id, dish in photo_matches:
+                    if kept_in_photo >= max_per_photo:
+                        break
+                    # v2.6方案B: 极高阈值，宁缺毋滥。感知哈希跨光线/角度区分度有限
+                    if sim < 0.75:  # 低于0.75不取，避免假阳性
+                        continue
+                    confidence = 'high' if sim > 0.80 else 'medium'
+                    if dish_id not in all_matches or sim > all_matches[dish_id]['_sim']:
+                        all_matches[dish_id] = {
+                            'name': dish['name'], 'dish_id': dish_id,
+                            'confidence': confidence,
+                            'category': dish['category'], 'cooking': dish['cooking'],
+                            'quantity': int(sim * 10 + 2),
+                            'calories': dish['calories'], 'protein': dish['protein'],
+                            'carbs': dish['carbs'], 'fat': dish['fat'],
+                            'fiber': dish['fiber'], 'sodium': dish['sodium'],
+                            'gi': dish['gi'], 'original_price': dish['original_price'],
+                            '_sim': sim
+                        }
+                        kept_in_photo += 1
             identified = list(all_matches.values())
             for d in identified:
                 d.pop('_sim', None)
+            # v2.6方案B: 按相似度排序只取top-3，防止泛滥匹配
             identified.sort(key=lambda x: x.get('quantity', 0), reverse=True)
-            identified = identified[:5]
+            identified = identified[:3]
 
             zones = set()
             for d in identified:
@@ -1448,29 +1520,54 @@ class AIEngine:
         return self.smart.analyze_plate_waste(image_path)
 
     def identify_buffet_dishes(self, image_paths):
-        """自助餐台识别：DeepSeek → Claude → 闭集匹配 → Smart Demo"""
-        # 1. DeepSeek
+        """
+        自助餐台识别 — v2.6方案B: 纯菜品库闭集匹配
+        所有识别路径强制约束到12道固定菜品库，绝不编造
+        优先级: DeepSeek → Claude闭集 → SmartMatcher感知哈希 → 空结果(诚实)
+        """
+        # 1. DeepSeek + 菜品库约束
         if self.mode == 'closed_set_deepseek' and self.deepseek.available:
             result = self.deepseek.identify_buffet_dishes(image_paths)
             if result and result.get('identified_dishes'):
                 return result
-        # 2. Claude
-        if self.mode == 'closed_set_ai' and self.closed_set:
+        # 2. Claude + 菜品库约束（闭集包装）
+        if self.mode in ('closed_set_deepseek', 'closed_set_ai') and self.closed_set:
             result = self.closed_set.identify_buffet_dishes(image_paths)
             if result and result.get('identified_dishes'):
                 return result
-        # 3. 闭集Smart匹配
-        if self.mode in ('closed_set_deepseek', 'closed_set_ai', 'closed_set_smart') and self.smart_matcher:
+        # 3. DeepSeek 无闭集包装（但仍受菜品库约束）
+        if self.deepseek.available:
+            result = self.deepseek.identify_buffet_dishes(image_paths)
+            if result and result.get('identified_dishes'):
+                return result
+        # 4. Claude 无闭集包装（但仍受菜品库约束）
+        if self.real_ai.available:
+            result = self.real_ai.identify_buffet_dishes(image_paths)
+            if result and result.get('identified_dishes'):
+                return result
+        # 5. SmartMatcher 感知哈希匹配 —— 纯库匹配，绝不编造
+        if self.smart_matcher:
             result = self.smart_matcher.match_buffet(image_paths)
             if result and result.get('identified_dishes'):
                 return result
-        # 4. 旧版Claude（无菜品库）
-        if self.mode == 'real_ai':
-            result = self.real_ai.identify_buffet_dishes(image_paths)
-            if result:
-                return result
-        # 4. 旧版Smart Demo兜底
-        return self.smart.identify_buffet_dishes(image_paths)
+            # SmartMatcher没匹配到：返回空结果，诚实告知
+            return {
+                'identified_dishes': [],
+                'total_count': 0,
+                'photos_analyzed': len(image_paths),
+                'analysis_time': datetime.now().strftime('%H:%M:%S'),
+                'zones_detected': [],
+                'analysis_method': 'closed_set_smart_no_match'
+            }
+        # 6. 绝对兜底：无菜品库、无API、无SmartMatcher → 空结果
+        return {
+            'identified_dishes': [],
+            'total_count': 0,
+            'photos_analyzed': len(image_paths),
+            'analysis_time': datetime.now().strftime('%H:%M:%S'),
+            'zones_detected': [],
+            'analysis_method': 'no_engine_available'
+        }
 
     def match_meals(self, dietary_type, allergies, available_dishes):
         """智能搭配引擎 v2.4 — P1~P4 改进版"""
