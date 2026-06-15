@@ -2368,11 +2368,13 @@ def product2():
         {"id": "light_salad", "name": "轻食沙拉系", "icon": "🥗", "desc": "清爽低负担"},
         {"id": "comfort_food", "name": "暖胃家常味", "icon": "🍲", "desc": "热汤热菜，中式家常"},
     ]
-    identified_dishes = session.get('identified_dishes', None)
+    # v2.6 手动选菜: 传递完整菜品库供前端渲染
+    lib = get_dish_library()
+    all_dishes = lib.list_dishes() if lib else []
     ai_mode = AIEngine().mode
     return render_template('product2_dishes.html',
                          dietary_types=dietary_types,
-                         identified_dishes=identified_dishes,
+                         all_dishes=all_dishes,
                          ai_mode=ai_mode)
 
 
@@ -2420,14 +2422,21 @@ def product2_identify():
 
 @app.route('/product2/match', methods=['POST'])
 def product2_match():
-    """Step 3: 消费者选需求 → AI搭配"""
+    """v2.6: 手动选菜 + DeepSeek智能搭配"""
     dietary_type = request.form.get('dietary_type', 'quick_work_lunch')
     allergies_str = request.form.get('allergies', '')
     allergies = [a.strip() for a in allergies_str.split(',') if a.strip()] if allergies_str else []
 
-    available_dishes = session.get('identified_dishes', None)
+    # v2.6 手动选菜: 从表单获取选中的菜品和数量(JSON)
+    import json as _json
+    selected_json = request.form.get('selected_dishes', '[]')
+    try:
+        available_dishes = _json.loads(selected_json)
+    except (_json.JSONDecodeError, TypeError):
+        available_dishes = []
+
     if not available_dishes:
-        flash('请先由酒店工作人员拍摄剩余菜品照片', 'error')
+        flash('请至少选择一道剩余菜品', 'error')
         return redirect(url_for('product2'))
 
     engine = AIEngine()
@@ -2446,12 +2455,13 @@ def product2_match():
     result['dietary_label'] = dietary_labels.get(dietary_type, '均衡饮食')
     result['allergies'] = allergies
     result['current_time'] = datetime.now().strftime('%H:%M')
-    result['source'] = 'ai_identified'
-    id_info = session.get('id_result', {})
-    result['photos_analyzed'] = id_info.get('photos_analyzed', 0)
-    result['id_time'] = id_info.get('analysis_time', '')
-    result['image_urls'] = id_info.get('image_urls', [])
-    result['ai_mode'] = id_info.get('analysis_method', engine.mode)
+    result['source'] = 'manual_selection'
+    result['photos_analyzed'] = 0
+    result['total_leftover_count'] = len(available_dishes)
+    result['available_count'] = len(available_dishes)
+    result['id_time'] = datetime.now().strftime('%H:%M')
+    result['image_urls'] = []
+    result['ai_mode'] = engine.mode
 
     session['last_matching'] = result
     return render_template('product2_result.html', result=result)
