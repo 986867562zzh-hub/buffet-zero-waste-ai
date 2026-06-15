@@ -141,7 +141,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in result.calorie_info.items %}
+                                {% for item in result.calorie_info['items'] %}
                                 <tr>
                                     <td><strong>{{ item.name }}</strong></td>
                                     <td><span class="badge bg-secondary">{{ item.category }}</span></td>
