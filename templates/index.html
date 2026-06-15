@@ -1,8 +1,8 @@
-﻿{% extends "base.html" %}
-{% block title %}ZeroDine零膳 — 首页{% endblock %}
+{% extends "base.html" %}
+{% block title %}{{ _('index.title') }}{% endblock %}
 
 {% block content %}
-<!-- Hero 区域 -->
+<!-- Hero -->
 <section class="hero-section text-white text-center">
     <div class="container py-5">
         <div class="row justify-content-center">
@@ -10,24 +10,21 @@
                 <div class="hero-icon mb-4">
                     <i class="fas fa-seedling fa-3x"></i>
                 </div>
-                <h1 class="display-4 fw-bold mb-3">ZeroDine<span style="color:#ffa502;">零膳</span></h1>
-                <h2 class="h3 mb-4">取之有度，食之无剩，ZeroDine 守护每一份食材。</h2>
-                <p class="lead mb-4">
-                    基于 <strong>固定菜品库 + AI视觉匹配</strong> 技术<br>
-                    减少食物浪费 · 智能折扣激励 · 剩菜二次利用
-                </p>
+                <h1 class="display-4 fw-bold mb-3">{{ _('index.hero_title')|safe }}</h1>
+                <h2 class="h3 mb-4">{{ _('index.hero_subtitle') }}</h2>
+                <p class="lead mb-4">{{ _('index.hero_desc')|safe }}</p>
                 <div class="hero-stats d-flex justify-content-center gap-4 mb-4">
                     <div class="stat-item reveal reveal-scale">
                         <span class="stat-number" data-target="30" data-prefix="-" data-suffix="%">-30%</span>
-                        <span class="stat-label">食物浪费</span>
+                        <span class="stat-label">{{ _('index.stat_waste') }}</span>
                     </div>
                     <div class="stat-item reveal reveal-scale reveal-delay-1">
-                        <span class="stat-number" data-target="85" data-suffix="折">85折</span>
-                        <span class="stat-label">最高折扣</span>
+                        <span class="stat-number" data-target="85" data-suffix="{{ '折' if lang == 'en' else '折' }}">85折</span>
+                        <span class="stat-label">{{ _('index.stat_discount') }}</span>
                     </div>
                     <div class="stat-item reveal reveal-scale reveal-delay-2">
-                        <span class="stat-number" data-target="28" data-suffix="种">28种</span>
-                        <span class="stat-label">饮食方案</span>
+                        <span class="stat-number" data-target="28" data-suffix="{{ '种' if lang != 'en' else '' }}">28种</span>
+                        <span class="stat-label">{{ _('index.stat_plans') }}</span>
                     </div>
                 </div>
             </div>
@@ -41,9 +38,9 @@
         <div class="card border-0 shadow-lg bg-gradient-warning text-white overflow-hidden">
             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                 <div>
-                    <span class="badge bg-dark mb-2">🎬 新功能</span>
-                    <h4 class="mb-1 fw-bold">一键演示模式</h4>
-                    <p class="mb-0 opacity-75">预设6步完整流程，零翻车风险，适合课堂展示</p>
+                    <span class="badge bg-dark mb-2">{{ _('index.demo_badge') }}</span>
+                    <h4 class="mb-1 fw-bold">{{ _('index.demo_title') }}</h4>
+                    <p class="mb-0 opacity-75">{{ _('index.demo_desc') }}</p>
                 </div>
                 <div class="demo-entry-icon">
                     <i class="fas fa-play-circle fa-3x"></i>
@@ -64,20 +61,17 @@
                         <i class="fas fa-camera-retro fa-4x text-white opacity-75"></i>
                     </div>
                     <div class="card-body p-4">
-                        <span class="badge bg-success mb-2">产品一</span>
-                        <h3 class="card-title fw-bold">剩食评分折扣系统</h3>
-                        <p class="card-text text-muted">
-                            消费者用餐后拍摄餐盘照片，AI视觉识别剩余食物，自动生成浪费评分。
-                            光盘行动 = 最高<strong>85折</strong>优惠！用经济激励减少食物浪费。
-                        </p>
+                        <span class="badge bg-success mb-2">{{ _('index.product1_badge') }}</span>
+                        <h3 class="card-title fw-bold">{{ _('index.product1_title') }}</h3>
+                        <p class="card-text text-muted">{{ _('index.product1_desc')|safe }}</p>
                         <ul class="feature-list list-unstyled mb-4">
-                            <li><i class="fas fa-check-circle text-success me-2"></i>GPT-4o Vision 智能图像识别</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>多维度加权评分算法</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>5级折扣自动映射</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>历史记录与环保积分</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat1') }}</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat2') }}</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat3') }}</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat4') }}</li>
                         </ul>
                         <a href="/product1" class="btn btn-success btn-lg w-100">
-                            <i class="fas fa-camera me-2"></i>开始体验
+                            <i class="fas fa-camera me-2"></i>{{ _('index.start_btn') }}
                         </a>
                     </div>
                 </div>
@@ -90,20 +84,17 @@
                         <i class="fas fa-utensil-spoon fa-4x text-white opacity-75"></i>
                     </div>
                     <div class="card-body p-4">
-                        <span class="badge bg-primary mb-2">产品二</span>
-                        <h3 class="card-title fw-bold">剩菜智能搭配系统</h3>
-                        <p class="card-text text-muted">
-                            餐厅拍摄剩余菜品，AI根据您的饮食需求（减脂/增肌/素食等28种方案），
-                            智能搭配出营养均衡的套餐，以<strong>超低折扣价</strong>二次售卖。
-                        </p>
+                        <span class="badge bg-primary mb-2">{{ _('index.product2_badge') }}</span>
+                        <h3 class="card-title fw-bold">{{ _('index.product2_title') }}</h3>
+                        <p class="card-text text-muted">{{ _('index.product2_desc')|safe }}</p>
                         <ul class="feature-list list-unstyled mb-4">
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>28种饮食需求精准匹配</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>营养均衡智能搭配引擎</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>3-7折超值折扣定价</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>食品安全时间管控</li>
+                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat1') }}</li>
+                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat2') }}</li>
+                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat3') }}</li>
+                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat4') }}</li>
                         </ul>
                         <a href="/product2" class="btn btn-primary btn-lg w-100">
-                            <i class="fas fa-utensils me-2"></i>开始体验
+                            <i class="fas fa-utensils me-2"></i>{{ _('index.start_btn') }}
                         </a>
                     </div>
                 </div>
@@ -115,42 +106,34 @@
 <!-- 工作流程 -->
 <section class="workflow-section py-5 bg-light">
     <div class="container">
-        <h2 class="text-center fw-bold mb-5">系统工作流程</h2>
+        <h2 class="text-center fw-bold mb-5">{{ _('index.workflow_title') }}</h2>
         <div class="row g-4">
             <div class="col-md-3 text-center reveal reveal-delay-1">
                 <div class="workflow-step">
-                    <div class="step-icon bg-success text-white mx-auto mb-3">
-                        <i class="fas fa-mobile-alt fa-2x"></i>
-                    </div>
-                    <h5>📸 拍照上传</h5>
-                    <p class="text-muted small">消费者/餐厅拍摄照片上传系统</p>
+                    <div class="step-icon bg-success text-white mx-auto mb-3"><i class="fas fa-mobile-alt fa-2x"></i></div>
+                    <h5>{{ _('index.wf_step1_title') }}</h5>
+                    <p class="text-muted small">{{ _('index.wf_step1_desc') }}</p>
                 </div>
             </div>
             <div class="col-md-3 text-center reveal reveal-delay-2">
                 <div class="workflow-step">
-                    <div class="step-icon bg-primary text-white mx-auto mb-3">
-                        <i class="fas fa-brain fa-2x"></i>
-                    </div>
-                    <h5>🤖 AI识别分析</h5>
-                    <p class="text-muted small">固定菜品库闭集匹配，精准识别12道菜</p>
+                    <div class="step-icon bg-primary text-white mx-auto mb-3"><i class="fas fa-brain fa-2x"></i></div>
+                    <h5>{{ _('index.wf_step2_title') }}</h5>
+                    <p class="text-muted small">{{ _('index.wf_step2_desc') }}</p>
                 </div>
             </div>
             <div class="col-md-3 text-center reveal reveal-delay-3">
                 <div class="workflow-step">
-                    <div class="step-icon bg-warning text-white mx-auto mb-3">
-                        <i class="fas fa-calculator fa-2x"></i>
-                    </div>
-                    <h5>📊 智能计算</h5>
-                    <p class="text-muted small">评分引擎 & 搭配引擎自动计算</p>
+                    <div class="step-icon bg-warning text-white mx-auto mb-3"><i class="fas fa-calculator fa-2x"></i></div>
+                    <h5>{{ _('index.wf_step3_title') }}</h5>
+                    <p class="text-muted small">{{ _('index.wf_step3_desc') }}</p>
                 </div>
             </div>
             <div class="col-md-3 text-center reveal reveal-delay-4">
                 <div class="workflow-step">
-                    <div class="step-icon bg-danger text-white mx-auto mb-3">
-                        <i class="fas fa-tags fa-2x"></i>
-                    </div>
-                    <h5>🏷️ 结果输出</h5>
-                    <p class="text-muted small">折扣码 / 搭配方案即时呈现</p>
+                    <div class="step-icon bg-danger text-white mx-auto mb-3"><i class="fas fa-tags fa-2x"></i></div>
+                    <h5>{{ _('index.wf_step4_title') }}</h5>
+                    <p class="text-muted small">{{ _('index.wf_step4_desc') }}</p>
                 </div>
             </div>
         </div>
@@ -160,38 +143,37 @@
 <!-- 技术亮点 -->
 <section class="tech-section py-5">
     <div class="container">
-        <h2 class="text-center fw-bold mb-5">技术架构</h2>
+        <h2 class="text-center fw-bold mb-5">{{ _('index.tech_title') }}</h2>
         <div class="row g-4">
             <div class="col-lg-3 col-md-6 reveal reveal-delay-1">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-robot fa-2x text-success mb-3"></i>
-                    <h5>AI视觉识别</h5>
-                    <p class="small text-muted">DeepSeek Vision API<br>闭集菜品库匹配<br>结构化JSON输出</p>
+                    <h5>{{ _('index.tech1_title') }}</h5>
+                    <p class="small text-muted">{{ _('index.tech1_desc')|safe }}</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 reveal reveal-delay-2">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-chart-pie fa-2x text-primary mb-3"></i>
-                    <h5>评分算法</h5>
-                    <p class="small text-muted">加权食物分类评分<br>多级折扣映射<br>实时计算响应</p>
+                    <h5>{{ _('index.tech2_title') }}</h5>
+                    <p class="small text-muted">{{ _('index.tech2_desc')|safe }}</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 reveal reveal-delay-3">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-puzzle-piece fa-2x text-warning mb-3"></i>
-                    <h5>搭配引擎</h5>
-                    <p class="small text-muted">12种饮食约束模型<br>P1-P4逐级放宽<br>营养合规评分</p>
+                    <h5>{{ _('index.tech3_title') }}</h5>
+                    <p class="small text-muted">{{ _('index.tech3_desc')|safe }}</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 reveal reveal-delay-4">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
                     <i class="fas fa-cloud fa-2x text-danger mb-3"></i>
-                    <h5>云端部署</h5>
-                    <p class="small text-muted">Python Flask<br>Render.com 24/7在线<br>全平台响应式</p>
+                    <h5>{{ _('index.tech4_title') }}</h5>
+                    <p class="small text-muted">{{ _('index.tech4_desc')|safe }}</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 {% endblock %}
-

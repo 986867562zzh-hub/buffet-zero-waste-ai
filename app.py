@@ -33,6 +33,8 @@ try:
 except ImportError:
     pass
 
+from translations import get_text as _, LANGUAGES, get_lang
+
 from flask import (
     Flask, render_template, request, redirect, url_for,
     flash, session, jsonify, send_from_directory
@@ -68,6 +70,26 @@ app.config['COMPOSITES_DIR'] = COMPOSITES_DIR if USE_CONFIG else os.path.join(os
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['COMPOSITES_DIR'], exist_ok=True)
+
+
+# ═══════════════════════════════════════════
+# v2.6 多语言支持: zh-CN / zh-TW / en
+# ═══════════════════════════════════════════
+@app.context_processor
+def inject_translations():
+    """向所有模板注入翻译函数和当前语言"""
+    return {
+        '_': _,
+        'lang': get_lang(),
+        'languages': LANGUAGES,
+    }
+
+@app.route('/set_lang/<language>')
+def set_lang(language):
+    """切换语言"""
+    if language in LANGUAGES:
+        session['lang'] = language
+    return redirect(request.referrer or url_for('index'))
 
 
 # 延迟初始化菜品库（DishLibrary类定义在后面，等首次使用时才创建）
