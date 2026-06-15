@@ -2029,7 +2029,10 @@ def admin_library():
     """菜品库管理页面"""
     library = get_dish_library()
     dishes = library.list_dishes()
-    return render_template('admin_library.html', dishes=dishes)
+    # 单独准备一份不含base64图片的元数据给JS（避免页面过大导致Render超时）
+    dishes_meta = [{k: v for k, v in d.items() if k != 'reference_images'}
+                   for d in dishes]
+    return render_template('admin_library.html', dishes=dishes, dishes_meta=dishes_meta)
 
 
 @app.route('/admin/library/add', methods=['POST'])

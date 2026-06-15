@@ -296,8 +296,8 @@
 
 {% block extra_scripts %}
 <script>
-// 菜品数据（从服务端注入，用于编辑时填充表单）
-const dishesData = {{ dishes|tojson }};
+// 菜品数据（不含base64图片，用于编辑时填充表单）
+const dishesData = {{ dishes_meta|tojson }};
 
 // 预览上传图片
 document.getElementById('input-image').addEventListener('change', function(e) {
