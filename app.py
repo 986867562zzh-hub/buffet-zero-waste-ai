@@ -397,9 +397,9 @@ class SmartImageAnalyzer:
         # 2. 从实际颜色分布确定食物类别
         total_colored = sum(color_bins.values()) or 1
         items = []
-        for food_type, count in color_bins.most_common(6):
+        for food_type, count in color_bins.most_common(4):
             pct = count / total_colored * 100
-            if pct < 5:
+            if pct < 8:
                 continue
             # 找到该类型对应的剩余比例
             rem_pct = round(waste_pct * pct / 100, 1)
@@ -1089,21 +1089,26 @@ class SmartMatcher:
             matches = []
             for dish_id, ref_profile in self.profiles.items():
                 sim = self._compare(query_profile, ref_profile)
-                if sim > 0.3:  # 最低相似度阈值
+                if sim > 0.4:  # 最低相似度阈值
                     dish = self.library.get_dish(dish_id)
                     if dish:
+                        # 根据相似度估算剩余量和份量
+                        portion = '小份' if sim < 0.5 else ('中份' if sim < 0.65 else '大份')
+                        rem_pct = int(sim * 100)
                         matches.append({
                             'name': dish['name'],
                             'dish_id': dish_id,
-                            'confidence': 'high' if sim > 0.6 else ('medium' if sim > 0.45 else 'low'),
+                            'confidence': 'high' if sim > 0.6 else ('medium' if sim > 0.5 else 'low'),
                             'similarity': round(sim * 100),
                             'category': dish['category'],
-                            'estimated_remaining_percentage': random.randint(20, 90),
-                            'estimated_original_portion': '中份',
+                            'estimated_remaining_percentage': rem_pct,
+                            'estimated_original_portion': portion,
                             'visual_evidence': f"颜色特征相似度 {sim*100:.0f}%"
                         })
 
             matches.sort(key=lambda x: x['similarity'], reverse=True)
+            # 只保留最佳匹配的前3项
+            matches = matches[:3]
 
             # 估算浪费程度（基于查询图片的食物覆盖率）
             img = Image.open(uploaded_image_path).convert('RGB')
@@ -1150,7 +1155,7 @@ class SmartMatcher:
 
                 for dish_id, ref_profile in self.profiles.items():
                     sim = self._compare(query_profile, ref_profile)
-                    if sim > 0.3:
+                    if sim > 0.4:
                         if dish_id not in all_matches or sim > all_matches[dish_id]['_sim']:
                             dish = self.library.get_dish(dish_id)
                             if dish:
@@ -1177,6 +1182,7 @@ class SmartMatcher:
                 d.pop('_sim', None)
 
             identified.sort(key=lambda x: x.get('quantity', 0), reverse=True)
+            identified = identified[:5]  # 最多返回5道菜
 
             zones = set()
             for d in identified:
@@ -1763,14 +1769,20 @@ def product1_analyze():
             category = item.get('category', '其他')
             portion = item.get('estimated_original_portion', '中份')
             cal = estimate_calories_for_item(name, category, portion)
+
+            # 根据匹配置信度/覆盖率缩放热量（不是整盘菜都是一个菜）
+            confidence = item.get('confidence', 'medium')
+            similarity = item.get('similarity', 50)
+            if confidence == 'low':
+                cal = int(cal * 0.4)       # 低置信度→可能是误匹配，热量×40%
+            elif confidence == 'medium':
+                cal = int(cal * 0.65)       # 中置信度→部分匹配，热量×65%
+            # high置信度保持原热量
+
+            # 限制单道菜最大500kcal（一张照片不会全是同一道菜）
+            cal = min(cal, 500)
             item['calories'] = cal
             this_round_calories += cal
-
-        # 处理"剩余百分比"为吃掉的百分比（热量追踪模式下盘的菜是满的）
-        if mode == 'calorie':
-            for item in items:
-                item['remaining_percentage'] = 100  # 拿来的菜是满的
-                item['estimated_remaining_percentage'] = 100
 
         # Session累积
         total = session.get('calorie_total', 0) + this_round_calories
