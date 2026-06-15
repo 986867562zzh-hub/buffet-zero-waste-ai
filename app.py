@@ -781,6 +781,114 @@ IMPORTANT: ONLY include dishes you can ACTUALLY SEE in the photos. Do not make u
 
 
 # ====================================================================
+#  DeepSeek Vision API: 使用DeepSeek视觉模型进行食物识别
+#  OpenAI兼容接口，性价比高，中文理解力强
+# ====================================================================
+class DeepSeekVision:
+    """DeepSeek Vision API 识别引擎（OpenAI兼容）"""
+
+    def __init__(self):
+        self.api_key = os.environ.get('DEEPSEEK_API_KEY', '')
+        self.available = bool(self.api_key)
+        self.client = None
+        if self.available:
+            try:
+                from openai import OpenAI
+                self.client = OpenAI(
+                    api_key=self.api_key,
+                    base_url="https://api.deepseek.com"
+                )
+            except Exception as e:
+                print(f"[DeepSeek] Init error: {e}")
+                self.available = False
+
+    def analyze_plate_waste(self, image_path):
+        """餐盘浪费分析"""
+        if not self.available:
+            return None
+        try:
+            with open(image_path, 'rb') as f:
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
+            ext = os.path.splitext(image_path)[1].lower()
+            mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                       '.png': 'image/png', '.webp': 'image/webp'}
+            media_type = mime_map.get(ext, 'image/jpeg')
+
+            resp = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": (
+                            "你是一个专业的美食识别助手。这张照片是自助餐厅里一位食客的餐盘（用餐后）。"
+                            "请识别餐盘上还剩下哪些食物，估计剩余量。\n\n"
+                            "返回纯JSON（不要markdown）：\n"
+                            '{"plate_status":"empty|light|moderate|heavy|full",'
+                            '"overall_waste_percentage":数字(0-100),'
+                            '"items":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                            '"estimated_remaining_percentage":数字,"estimated_original_portion":"小份|中份|大份",'
+                            '"visual_evidence":"看到了什么"}],'
+                            '"summary":"一句中文总结"}\n'
+                            "只列出你实际看到的食物。诚实识别。"
+                        )},
+                        {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{img_b64}"}}
+                    ]
+                }],
+                max_tokens=2000, temperature=0.1
+            )
+            text = resp.choices[0].message.content.strip()
+            if text.startswith('```'): text = text.split('\n', 1)[1]; text = text[:-3] if text.endswith('```') else text
+            result = json.loads(text)
+            result['analysis_method'] = 'deepseek_vision'
+            return result
+        except Exception as e:
+            print(f"[DeepSeek] Plate analysis error: {e}")
+            return None
+
+    def identify_buffet_dishes(self, image_paths):
+        """自助餐台菜品识别"""
+        if not self.available:
+            return None
+        try:
+            content = [{"type": "text", "text": (
+                f"以下是自助餐厅{len(image_paths)}个餐台区域的照片。请识别每个区域有哪些菜品，估算剩余份数(1-15)。\n\n"
+                "返回纯JSON：\n"
+                '{"dishes":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                '"cooking":"炒|蒸|煮|炸|烤|炖|凉拌|生食","quantity":剩余份数(1-15),'
+                '"calories":估算热量(kcal),"protein":蛋白质(g),"carbs":碳水(g),"fat":脂肪(g),'
+                '"fiber":纤维(g),"sodium":钠(mg),"gi":GI值,"original_price":原价(元)}],'
+                '"zones_detected":["区域"]}\n'
+                "只列出你实际看到的菜品，不要编造。"
+            )}]
+            for i, path in enumerate(image_paths):
+                with open(path, 'rb') as f:
+                    img_b64 = base64.b64encode(f.read()).decode('utf-8')
+                ext = os.path.splitext(path)[1].lower()
+                mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}
+                media_type = mime_map.get(ext, 'image/jpeg')
+                content.append({"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{img_b64}"}})
+
+            resp = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": content}],
+                max_tokens=3000, temperature=0.1
+            )
+            text = resp.choices[0].message.content.strip()
+            if text.startswith('```'): text = text.split('\n', 1)[1]; text = text[:-3] if text.endswith('```') else text
+            result = json.loads(text)
+            if 'identified_dishes' not in result:
+                result['identified_dishes'] = result.get('dishes', [])
+            result['total_count'] = len(result.get('identified_dishes', []))
+            result['photos_analyzed'] = len(image_paths)
+            result['analysis_time'] = datetime.now().strftime('%H:%M:%S')
+            result['analysis_method'] = 'deepseek_vision'
+            return result
+        except Exception as e:
+            print(f"[DeepSeek] Buffet error: {e}")
+            return None
+
+
+# ====================================================================
 #  闭集AI引擎: 基于固定菜品库的Closed-Set Matching
 #  将用户照片与菜品库参考图对比，只从库中12道菜中识别
 # ====================================================================
@@ -1263,18 +1371,24 @@ class SmartMatcher:
 #  更新为闭集匹配优先的架构
 # ====================================================================
 class AIEngine:
-    """统一入口 - 闭集匹配优先，逐步降级"""
+    """统一入口 - DeepSeek/Claude AI优先，闭集匹配兜底"""
 
     def __init__(self):
         self.dish_library = get_dish_library()
         self.real_ai = RealAIVision()
+        self.deepseek = DeepSeekVision()
         self.smart = SmartImageAnalyzer()
 
-        # 初始化闭集引擎
         has_library = self.dish_library is not None and len(self.dish_library.list_dishes()) > 0
-        has_api_key = self.real_ai.available and os.environ.get('ANTHROPIC_API_KEY')
+        has_claude = self.real_ai.available and os.environ.get('ANTHROPIC_API_KEY')
+        has_deepseek = self.deepseek.available and os.environ.get('DEEPSEEK_API_KEY')
 
-        if has_library and has_api_key:
+        # 优先级: DeepSeek > Claude > SmartMatcher > SmartDemo
+        if has_library and has_deepseek:
+            self.closed_set = ClosedSetVision(self.dish_library)
+            self.smart_matcher = SmartMatcher(self.dish_library)
+            self.mode = 'closed_set_deepseek'
+        elif has_library and has_claude:
             self.closed_set = ClosedSetVision(self.dish_library)
             self.smart_matcher = SmartMatcher(self.dish_library)
             self.mode = 'closed_set_ai'
@@ -1282,7 +1396,7 @@ class AIEngine:
             self.smart_matcher = SmartMatcher(self.dish_library)
             self.closed_set = None
             self.mode = 'closed_set_smart'
-        elif has_api_key:
+        elif has_claude:
             self.smart_matcher = None
             self.closed_set = None
             self.mode = 'real_ai'
@@ -1292,39 +1406,49 @@ class AIEngine:
             self.mode = 'smart_demo'
 
     def analyze_plate_waste(self, image_path):
-        """餐盘浪费分析：闭集匹配 → 真实AI → Smart Demo 逐级降级"""
-        # 1. 闭集AI匹配（最佳方案）
+        """餐盘分析：DeepSeek → Claude → 闭集匹配 → Smart Demo 逐级降级"""
+        # 1. DeepSeek（优先：便宜+中文强）
+        if self.mode == 'closed_set_deepseek' and self.deepseek.available:
+            result = self.deepseek.analyze_plate_waste(image_path)
+            if result and (result.get('items') or result.get('matched_dishes')):
+                return result
+        # 2. Claude（备选）
         if self.mode == 'closed_set_ai' and self.closed_set:
             result = self.closed_set.analyze_plate_waste(image_path)
             if result and (result.get('items') or result.get('matched_dishes')):
                 return result
-        # 2. 闭集Smart匹配（需要：结果非空且有实际匹配项）
-        if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
+        # 3. 闭集Smart匹配
+        if self.mode in ('closed_set_deepseek', 'closed_set_ai', 'closed_set_smart') and self.smart_matcher:
             result = self.smart_matcher.match_plate(image_path)
             if result and result.get('items'):
                 return result
-        # 3. 旧版真实AI（无菜品库时）
+        # 4. 旧版Claude（无菜品库）
         if self.mode == 'real_ai':
             result = self.real_ai.analyze_plate_waste(image_path)
             if result:
                 result['analysis_method'] = 'real_ai_claude'
                 return result
-        # 4. 旧版Smart Demo兜底（总能识别出一些东西）
+        # 5. Smart Demo兜底
         return self.smart.analyze_plate_waste(image_path)
 
     def identify_buffet_dishes(self, image_paths):
-        """自助餐台识别：闭集匹配 → 真实AI → Smart Demo 逐级降级"""
-        # 1. 闭集AI匹配（最佳方案）
+        """自助餐台识别：DeepSeek → Claude → 闭集匹配 → Smart Demo"""
+        # 1. DeepSeek
+        if self.mode == 'closed_set_deepseek' and self.deepseek.available:
+            result = self.deepseek.identify_buffet_dishes(image_paths)
+            if result and result.get('identified_dishes'):
+                return result
+        # 2. Claude
         if self.mode == 'closed_set_ai' and self.closed_set:
             result = self.closed_set.identify_buffet_dishes(image_paths)
             if result and result.get('identified_dishes'):
                 return result
-        # 2. 闭集Smart匹配（需要：结果非空且有实际匹配项）
-        if self.mode in ('closed_set_ai', 'closed_set_smart') and self.smart_matcher:
+        # 3. 闭集Smart匹配
+        if self.mode in ('closed_set_deepseek', 'closed_set_ai', 'closed_set_smart') and self.smart_matcher:
             result = self.smart_matcher.match_buffet(image_paths)
             if result and result.get('identified_dishes'):
                 return result
-        # 3. 旧版真实AI（无菜品库时）
+        # 4. 旧版Claude（无菜品库）
         if self.mode == 'real_ai':
             result = self.real_ai.identify_buffet_dishes(image_paths)
             if result:
@@ -2149,6 +2273,83 @@ def admin_library_export():
         return jsonify({'error': '菜品库文件不存在'}), 404
     with open(library_path, 'r', encoding='utf-8') as f:
         return jsonify(json.load(f))
+
+
+# ---- 演示模式 ----
+@app.route('/demo')
+def demo_mode():
+    """一键演示模式：预设流程，零翻车风险"""
+    library = get_dish_library()
+    dishes = {d['id']: d for d in library.list_dishes()}
+
+    # 获取每道菜的参考图URL
+    def get_ref(dish_id):
+        d = dishes.get(dish_id, {})
+        refs = d.get('reference_images', [])
+        return refs[0] if refs else ''
+
+    demo_steps = [
+        {
+            'title': '第一盘：拿了一份锅包肉',
+            'desc': '刚进餐厅，先来份经典东北菜',
+            'dish_ids': ['guobaorou'],
+            'ref_image': get_ref('guobaorou'),
+            'identify_name': '锅包肉',
+            'category': '肉类',
+            'calories': 310
+        },
+        {
+            'title': '第二盘：蒜蓉西兰花 + 白灼虾',
+            'desc': '荤素搭配，营养均衡',
+            'dish_ids': ['suanrongxilanhua', 'baizhuoxia'],
+            'ref_images': [get_ref('suanrongxilanhua'), get_ref('baizhuoxia')],
+            'identify_name': '蒜蓉西兰花 + 白灼虾',
+            'category': '蔬菜/海鲜',
+            'calories': 167
+        },
+        {
+            'title': '第三盘：来点红烧肉',
+            'desc': '忍不住想尝尝硬菜',
+            'dish_ids': ['hongshaorou'],
+            'ref_image': get_ref('hongshaorou'),
+            'identify_name': '红烧肉',
+            'category': '肉类',
+            'calories': 380
+        },
+        {
+            'title': '第四盘：扬州炒饭走起',
+            'desc': '主食不能少',
+            'dish_ids': ['yangzhouchaoan'],
+            'ref_image': get_ref('yangzhouchaoan'),
+            'identify_name': '扬州炒饭',
+            'category': '主食',
+            'calories': 320
+        },
+        {
+            'title': '第五盘：番茄蛋花汤',
+            'desc': '喝碗汤暖暖胃',
+            'dish_ids': ['fanqiedanhuatang'],
+            'ref_image': get_ref('fanqiedanhuatang'),
+            'identify_name': '番茄蛋花汤',
+            'category': '汤品',
+            'calories': 55
+        },
+        {
+            'title': '第六盘：水果拼盘收尾',
+            'desc': '饭后水果，完美收官',
+            'dish_ids': ['shuiguopinpan'],
+            'ref_image': get_ref('shuiguopinpan'),
+            'identify_name': '水果拼盘',
+            'category': '水果',
+            'calories': 95
+        },
+    ]
+
+    total = sum(s['calories'] for s in demo_steps)
+    return render_template('demo_mode.html',
+                          demo_steps=demo_steps,
+                          demo_threshold=1800,
+                          demo_total=total)
 
 
 # ---- 餐盘合成器 ----

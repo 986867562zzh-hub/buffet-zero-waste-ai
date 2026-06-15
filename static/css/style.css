@@ -817,6 +817,65 @@
     overflow: hidden;
 }
 
+/* ---- 演示模式 ---- */
+.demo-entry-card .card {
+    background: linear-gradient(135deg, #ffa502, #ff6348);
+    transition: all 0.3s ease;
+    border-radius: 16px;
+}
+.demo-entry-card:hover .card {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255,165,2,0.3) !important;
+}
+.demo-entry-icon {
+    animation: demoIconPulse 2s ease-in-out infinite;
+}
+@keyframes demoIconPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
+}
+.demo-step-item {
+    border: 2px solid #e9ecef;
+    background: white;
+}
+.demo-step-item:hover {
+    border-color: #ffa502;
+    background: #fff9f0;
+}
+.demo-step-item.active {
+    border-color: #ffa502;
+    background: #fff5e6;
+    box-shadow: 0 2px 8px rgba(255,165,2,0.15);
+}
+.demo-step-item.completed {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+.step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.demo-step-item.active .step-num { background: #ffa502; color: white; }
+.demo-step-item.completed .step-num { background: #28a745; color: white; }
+
+.demo-image-container {
+    position: relative;
+    overflow: hidden;
+}
+.demo-identify-tag {
+    animation: tagSlideUp 0.5s ease;
+}
+@keyframes tagSlideUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
 /* ---- 响应式 ---- */
 @media (max-width: 768px) {
     .mode-tabs {
