@@ -546,7 +546,7 @@ var LOADING_FACTS = [
     {emoji:'💰', text:{'zh-CN':'中国自助餐人均浪费约150-200g/餐，相当于每年浪费500万吨','zh-TW':'中國自助餐人均浪費約150-200g/餐，相當於每年浪費500萬噸','en':'Buffet diners waste 150-200g per meal on average — 5 million tons yearly in China'}},
     {emoji:'🌱', text:{'zh-CN':'减少食物浪费是应对气候变化的#1行动，效果超过电动车推广','zh-TW':'減少食物浪費是應對氣候變化的#1行動，效果超過電動車推廣','en':'Reducing food waste is the #1 climate action — more effective than EV adoption'}},
     {emoji:'🍽️', text:{'zh-CN':'光盘行动每年可为中国减少约6400万吨碳排放','zh-TW':'光盤行動每年可為中國減少約6400萬噸碳排放','en':'Clean Plate campaigns could reduce China\'s carbon emissions by 64 million tons/year'}},
-    {emoji:'💡', text:{'zh-CN':'每节省1公斤牛肉，相当于节约了15000升水资源','zh-TW':'每節省1公斤牛肉，相當於節約了15000升水資源','en':'Saving 1kg of beef saves 15,000 liters of water'},
+    {emoji:'💡', text:{'zh-CN':'每节省1公斤牛肉，相当于节约了15000升水资源','zh-TW':'每節省1公斤牛肉，相當於節約了15000升水資源','en':'Saving 1kg of beef saves 15,000 liters of water'}},
 ];
 
 var _factTimer = null;
