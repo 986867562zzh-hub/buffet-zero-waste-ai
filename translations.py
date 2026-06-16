@@ -342,6 +342,143 @@ T = {
     'demo.step7_desc': {'zh-CN':'最后放纵一下！热量即将超标 ⚠️','zh-TW':'最後放縱一下！熱量即將超標 ⚠️','en':'Final indulgence! Calorie limit approaching! ⚠️'},
 }
 
+# ═══════════════════════════════════════════
+# 12道菜品名翻译
+# ═══════════════════════════════════════════
+DISH_NAMES = {
+    '锅包肉': {'zh-CN':'锅包肉','zh-TW':'鍋包肉','en':'Guobaorou (Crispy Pork)'},
+    '鱼香肉丝': {'zh-CN':'鱼香肉丝','zh-TW':'魚香肉絲','en':'Yuxiang Rousi (Shredded Pork)'},
+    '红烧肉': {'zh-CN':'红烧肉','zh-TW':'紅燒肉','en':'Hongshaorou (Braised Pork)'},
+    '宫保鸡丁': {'zh-CN':'宫保鸡丁','zh-TW':'宮保雞丁','en':'Kung Pao Chicken'},
+    '清蒸鲈鱼': {'zh-CN':'清蒸鲈鱼','zh-TW':'清蒸鱸魚','en':'Steamed Bass'},
+    '白灼虾': {'zh-CN':'白灼虾','zh-TW':'白灼蝦','en':'Boiled Shrimp'},
+    '蒜蓉西兰花': {'zh-CN':'蒜蓉西兰花','zh-TW':'蒜蓉西蘭花','en':'Garlic Broccoli'},
+    '凉拌黄瓜': {'zh-CN':'凉拌黄瓜','zh-TW':'涼拌黃瓜','en':'Cucumber Salad'},
+    '扬州炒饭': {'zh-CN':'扬州炒饭','zh-TW':'揚州炒飯','en':'Yangzhou Fried Rice'},
+    '蒸红薯': {'zh-CN':'蒸红薯','zh-TW':'蒸紅薯','en':'Steamed Sweet Potato'},
+    '番茄蛋花汤': {'zh-CN':'番茄蛋花汤','zh-TW':'番茄蛋花湯','en':'Tomato Egg Soup'},
+    '水果拼盘': {'zh-CN':'水果拼盘','zh-TW':'水果拼盤','en':'Fruit Platter'},
+}
+
+# 菜品分类翻译
+CATEGORY_NAMES = {
+    '肉类': {'zh-CN':'肉类','zh-TW':'肉類','en':'Meat'},
+    '海鲜': {'zh-CN':'海鲜','zh-TW':'海鮮','en':'Seafood'},
+    '蔬菜': {'zh-CN':'蔬菜','zh-TW':'蔬菜','en':'Vegetable'},
+    '主食': {'zh-CN':'主食','zh-TW':'主食','en':'Staple'},
+    '汤品': {'zh-CN':'汤品','zh-TW':'湯品','en':'Soup'},
+    '甜点': {'zh-CN':'甜点','zh-TW':'甜點','en':'Dessert'},
+    '水果': {'zh-CN':'水果','zh-TW':'水果','en':'Fruit'},
+    '饮品': {'zh-CN':'饮品','zh-TW':'飲品','en':'Beverage'},
+    '蔬菜/海鲜': {'zh-CN':'蔬菜/海鲜','zh-TW':'蔬菜/海鮮','en':'Veg/Seafood'},
+}
+
+# 烹饪方式翻译
+COOKING_NAMES = {
+    '炒': {'zh-CN':'炒','zh-TW':'炒','en':'Stir-fried'},
+    '蒸': {'zh-CN':'蒸','zh-TW':'蒸','en':'Steamed'},
+    '煮': {'zh-CN':'煮','zh-TW':'煮','en':'Boiled'},
+    '炸': {'zh-CN':'炸','zh-TW':'炸','en':'Deep-fried'},
+    '烤': {'zh-CN':'烤','zh-TW':'烤','en':'Roasted'},
+    '炖': {'zh-CN':'炖','zh-TW':'燉','en':'Braised'},
+    '凉拌': {'zh-CN':'凉拌','zh-TW':'涼拌','en':'Cold-tossed'},
+    '生食': {'zh-CN':'生食','zh-TW':'生食','en':'Raw'},
+    '清炒': {'zh-CN':'清炒','zh-TW':'清炒','en':'Sautéed'},
+}
+
+# 13种饮食需求翻译
+DIETARY_TYPES = {
+    "fat_loss": {
+        "zh-CN": {"name":"减脂瘦身","desc":"低热量高蛋白，严格控碳控脂"},
+        "zh-TW": {"name":"減脂瘦身","desc":"低熱量高蛋白，嚴格控碳控脂"},
+        "en": {"name":"Fat Loss","desc":"Low cal, high protein, strict carb/fat control"}
+    },
+    "muscle_gain": {
+        "zh-CN": {"name":"增肌塑形","desc":"高蛋白中碳水，为肌肉合成供能"},
+        "zh-TW": {"name":"增肌塑形","desc":"高蛋白中碳水，為肌肉合成供能"},
+        "en": {"name":"Muscle Gain","desc":"High protein, moderate carbs for muscle building"}
+    },
+    "low_carb_keto": {
+        "zh-CN": {"name":"低碳水/生酮","desc":"极低碳水，酮体供能模式"},
+        "zh-TW": {"name":"低碳水/生酮","desc":"極低碳水，酮體供能模式"},
+        "en": {"name":"Low Carb/Keto","desc":"Ultra-low carb, ketosis mode"}
+    },
+    "vegan": {
+        "zh-CN": {"name":"纯素食","desc":"无任何动物来源食材"},
+        "zh-TW": {"name":"純素食","desc":"無任何動物來源食材"},
+        "en": {"name":"Vegan","desc":"No animal-derived ingredients"}
+    },
+    "diabetic_friendly": {
+        "zh-CN": {"name":"糖尿病友好","desc":"低GI食物，控制血糖"},
+        "zh-TW": {"name":"糖尿病友好","desc":"低GI食物，控制血糖"},
+        "en": {"name":"Diabetic Friendly","desc":"Low GI foods, blood sugar control"}
+    },
+    "senior_friendly": {
+        "zh-CN": {"name":"银发族易咀嚼","desc":"软烂易消化，低盐低脂"},
+        "zh-TW": {"name":"銀髮族易咀嚼","desc":"軟爛易消化，低鹽低脂"},
+        "en": {"name":"Senior Friendly","desc":"Soft, easy to digest, low salt/fat"}
+    },
+    "kids_meal": {
+        "zh-CN": {"name":"儿童营养餐","desc":"营养均衡，色彩丰富"},
+        "zh-TW": {"name":"兒童營養餐","desc":"營養均衡，色彩豐富"},
+        "en": {"name":"Kids Meal","desc":"Balanced nutrition, colorful"}
+    },
+    "high_protein": {
+        "zh-CN": {"name":"高蛋白","desc":"蛋白质>35g，运动人群"},
+        "zh-TW": {"name":"高蛋白","desc":"蛋白質>35g，運動人群"},
+        "en": {"name":"High Protein","desc":"Protein >35g, for athletes"}
+    },
+    "mediterranean": {
+        "zh-CN": {"name":"地中海饮食","desc":"多蔬果鱼类，健康脂肪"},
+        "zh-TW": {"name":"地中海飲食","desc":"多蔬果魚類，健康脂肪"},
+        "en": {"name":"Mediterranean","desc":"Rich in veggies, fish, healthy fats"}
+    },
+    "high_fiber": {
+        "zh-CN": {"name":"高纤维","desc":"膳食纤维>12g，肠道健康"},
+        "zh-TW": {"name":"高纖維","desc":"膳食纖維>12g，腸道健康"},
+        "en": {"name":"High Fiber","desc":"Fiber >12g, gut health"}
+    },
+    "quick_work_lunch": {
+        "zh-CN": {"name":"快捷工作餐","desc":"方便饱腹，上班族首选"},
+        "zh-TW": {"name":"快捷工作餐","desc":"方便飽腹，上班族首選"},
+        "en": {"name":"Quick Work Lunch","desc":"Convenient & filling, office-friendly"}
+    },
+    "light_salad": {
+        "zh-CN": {"name":"轻食沙拉系","desc":"清爽低负担"},
+        "zh-TW": {"name":"輕食沙拉系","desc":"清爽低負擔"},
+        "en": {"name":"Light & Fresh","desc":"Light and refreshing"}
+    },
+    "comfort_food": {
+        "zh-CN": {"name":"暖胃家常味","desc":"热汤热菜，中式家常"},
+        "zh-TW": {"name":"暖胃家常味","desc":"熱湯熱菜，中式家常"},
+        "en": {"name":"Comfort Food","desc":"Hot soup & dishes, homestyle"}
+    },
+}
+
+def dish_name(cn_name, lang=None):
+    """翻译菜品名"""
+    if lang is None: lang = get_lang()
+    entry = DISH_NAMES.get(cn_name, {})
+    return entry.get(lang, cn_name)
+
+def cat_name(cn_cat, lang=None):
+    """翻译分类名"""
+    if lang is None: lang = get_lang()
+    entry = CATEGORY_NAMES.get(cn_cat, {})
+    return entry.get(lang, cn_cat)
+
+def cook_name(cn_cook, lang=None):
+    """翻译烹饪方式"""
+    if lang is None: lang = get_lang()
+    entry = COOKING_NAMES.get(cn_cook, {})
+    return entry.get(lang, cn_cook)
+
+def dietary_name(dtype_id, lang=None):
+    """翻译饮食需求名"""
+    if lang is None: lang = get_lang()
+    entry = DIETARY_TYPES.get(dtype_id, {})
+    return entry.get(lang, entry.get('zh-CN', {'name':dtype_id,'desc':''}))
+
 def get_text(key, lang=None):
     """获取翻译文本"""
     if lang is None:

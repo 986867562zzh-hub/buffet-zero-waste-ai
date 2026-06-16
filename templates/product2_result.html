@@ -101,8 +101,8 @@
                                         </span>
                                     </div>
                                     <div class="col-4">
-                                        <strong>{{ item.name }}</strong>
-                                        <div class="small text-muted">{{ item.role }}</div>
+                                        <strong>{{ dn(item.name) }}</strong>
+                                        <div class="small text-muted">{{ cn(item.role) if item.role in ['主食','主菜','配菜','汤品'] else item.role }}</div>
                                     </div>
                                     <div class="col-2 text-center">
                                         <span class="text-decoration-line-through text-muted small">¥{{ item.original_price }}</span>

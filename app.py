@@ -33,7 +33,7 @@ try:
 except ImportError:
     pass
 
-from translations import get_text as _, LANGUAGES, get_lang
+from translations import get_text as _, LANGUAGES, get_lang, dish_name as _dn, cat_name as _cn, cook_name as _ckn, dietary_name as _diet
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -82,6 +82,11 @@ def inject_translations():
         '_': _,
         'lang': get_lang(),
         'languages': LANGUAGES,
+        'dn': _dn,        # 菜品名翻译
+        'cn': _cn,        # 分类名翻译
+        'ckn': _ckn,      # 烹饪方式翻译
+        'diet_name': lambda d_id: _diet(d_id)['name'],    # 饮食需求名
+        'diet_desc': lambda d_id: _diet(d_id)['desc'],    # 饮食需求描述
     }
 
 @app.route('/set_lang/<language>')
@@ -2375,21 +2380,15 @@ def product1_calorie_threshold():
 # ---- 产品二：剩菜搭配 ----
 @app.route('/product2')
 def product2():
-    dietary_types = [
-        {"id": "fat_loss", "name": "减脂瘦身", "icon": "🔥", "desc": "低热量高蛋白，严格控碳控脂"},
-        {"id": "muscle_gain", "name": "增肌塑形", "icon": "💪", "desc": "高蛋白中碳水，为肌肉合成供能"},
-        {"id": "low_carb_keto", "name": "低碳水/生酮", "icon": "🥑", "desc": "极低碳水，酮体供能模式"},
-        {"id": "vegan", "name": "纯素食", "icon": "🥬", "desc": "无任何动物来源食材"},
-        {"id": "diabetic_friendly", "name": "糖尿病友好", "icon": "💚", "desc": "低GI食物，控制血糖"},
-        {"id": "senior_friendly", "name": "银发族易咀嚼", "icon": "👴", "desc": "软烂易消化，低盐低脂"},
-        {"id": "kids_meal", "name": "儿童营养餐", "icon": "👶", "desc": "营养均衡，色彩丰富"},
-        {"id": "high_protein", "name": "高蛋白", "icon": "🥩", "desc": "蛋白质>35g，运动人群"},
-        {"id": "mediterranean", "name": "地中海饮食", "icon": "🫒", "desc": "多蔬果鱼类，健康脂肪"},
-        {"id": "high_fiber", "name": "高纤维", "icon": "🌾", "desc": "膳食纤维>12g，肠道健康"},
-        {"id": "quick_work_lunch", "name": "快捷工作餐", "icon": "🍱", "desc": "方便饱腹，上班族首选"},
-        {"id": "light_salad", "name": "轻食沙拉系", "icon": "🥗", "desc": "清爽低负担"},
-        {"id": "comfort_food", "name": "暖胃家常味", "icon": "🍲", "desc": "热汤热菜，中式家常"},
-    ]
+    # v2.6 多语言饮食需求
+    dietary_ids = ["fat_loss","muscle_gain","low_carb_keto","vegan","diabetic_friendly",
+                   "senior_friendly","kids_meal","high_protein","mediterranean","high_fiber",
+                   "quick_work_lunch","light_salad","comfort_food"]
+    dietary_icons = {"fat_loss":"🔥","muscle_gain":"💪","low_carb_keto":"🥑","vegan":"🥬",
+                     "diabetic_friendly":"💚","senior_friendly":"👴","kids_meal":"👶",
+                     "high_protein":"🥩","mediterranean":"🫒","high_fiber":"🌾",
+                     "quick_work_lunch":"🍱","light_salad":"🥗","comfort_food":"🍲"}
+    dietary_types = [{"id": d, "icon": dietary_icons[d]} for d in dietary_ids]
     # v2.6 手动选菜: 传递完整菜品库供前端渲染
     lib = get_dish_library()
     all_dishes = lib.list_dishes() if lib else []
@@ -2464,17 +2463,7 @@ def product2_match():
     engine = AIEngine()
     result = engine.match_meals(dietary_type, allergies, available_dishes)
 
-    dietary_labels = {
-        "fat_loss": "减脂瘦身", "muscle_gain": "增肌塑形",
-        "low_carb_keto": "低碳水/生酮", "vegan": "纯素食",
-        "diabetic_friendly": "糖尿病友好", "senior_friendly": "银发族",
-        "kids_meal": "儿童餐", "high_protein": "高蛋白",
-        "mediterranean": "地中海饮食", "high_fiber": "高纤维",
-        "quick_work_lunch": "快捷工作餐", "light_salad": "轻食沙拉",
-        "comfort_food": "暖胃家常味"
-    }
-
-    result['dietary_label'] = dietary_labels.get(dietary_type, '均衡饮食')
+    result['dietary_label'] = _diet(dietary_type)['name']
     result['allergies'] = allergies
     result['current_time'] = datetime.now().strftime('%H:%M')
     result['source'] = 'manual_selection'
