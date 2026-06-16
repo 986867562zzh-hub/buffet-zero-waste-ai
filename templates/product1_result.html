@@ -5,55 +5,40 @@
 <div class="container py-4">
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">首页</a></li>
-            <li class="breadcrumb-item"><a href="/product1">拍照识别</a></li>
-            <li class="breadcrumb-item active">分析结果</li>
+            <li class="breadcrumb-item"><a href="/">{{ _('breadcrumb.home') }}</a></li>
+            <li class="breadcrumb-item"><a href="/product1">{{ _('breadcrumb.product1') }}</a></li>
+            <li class="breadcrumb-item active">{{ _('breadcrumb.result') }}</li>
         </ol>
     </nav>
 
-    <!-- ====== 卡通提醒弹窗（热量达到阈值时） ====== -->
+    <!-- 卡通提醒弹窗 -->
     {% if result.mode == 'calorie' and result.calorie_info and result.calorie_info.threshold_reached %}
     <div class="cute-reminder" id="cuteReminder">
         <div class="reminder-backdrop" onclick="dismissReminder()"></div>
         <div class="reminder-card">
             <button class="reminder-close" onclick="dismissReminder()">✕</button>
-            <!-- 卡通角色 -->
             <div class="cute-character">
                 <div class="character-body">
-                    <div class="belly">
-                        <div class="belly-shine"></div>
-                    </div>
+                    <div class="belly"><div class="belly-shine"></div></div>
                     <div class="face">
-                        <div class="eye left-eye"></div>
-                        <div class="eye right-eye"></div>
-                        <div class="blush left-blush"></div>
-                        <div class="blush right-blush"></div>
+                        <div class="eye left-eye"></div><div class="eye right-eye"></div>
+                        <div class="blush left-blush"></div><div class="blush right-blush"></div>
                         <div class="mouth"></div>
                     </div>
-                    <div class="arm left-arm"></div>
-                    <div class="arm right-arm"></div>
-                    <div class="leg left-leg"></div>
-                    <div class="leg right-leg"></div>
+                    <div class="arm left-arm"></div><div class="arm right-arm"></div>
+                    <div class="leg left-leg"></div><div class="leg right-leg"></div>
                 </div>
             </div>
-            <!-- 提醒文字 -->
             <div class="reminder-text">
-                <h4 class="reminder-title">🐉 饱饱啦~</h4>
-                <p class="reminder-msg" id="reminderMsg">
-                    你已经拿了 <strong>{{ result.calorie_info.total }} kcal</strong> 的食物，
-                    再拿可能吃不下，别让我变成浪费的小可怜呀~ 💚
-                </p>
+                <h4 class="reminder-title">{{ _('p1r.cute_title') }}</h4>
+                <p class="reminder-msg" id="reminderMsg"></p>
                 <div class="reminder-calorie-info">
                     <span class="badge bg-danger fs-6">{{ result.calorie_info.total }} / {{ result.calorie_info.threshold }} kcal</span>
                 </div>
             </div>
             <div class="reminder-actions">
-                <button class="btn btn-success btn-lg" onclick="dismissReminder()">
-                    <i class="fas fa-check me-1"></i>好的，我知道了
-                </button>
-                <a href="/product1" class="btn btn-outline-secondary">
-                    <i class="fas fa-redo me-1"></i>重置继续拿
-                </a>
+                <button class="btn btn-success btn-lg" onclick="dismissReminder()"><i class="fas fa-check me-1"></i>{{ _('p1r.cute_ok') }}</button>
+                <a href="/product1" class="btn btn-outline-secondary"><i class="fas fa-redo me-1"></i>{{ _('p1r.cute_reset') }}</a>
             </div>
         </div>
     </div>
@@ -66,17 +51,17 @@
                 <div class="card-header bg-white border-0 pt-3">
                     <h5 class="mb-0">
                         {% if result.mode == 'calorie' %}
-                        <i class="fas fa-utensils me-2 text-danger"></i>你拿的菜
+                        <i class="fas fa-utensils me-2 text-danger"></i>{{ _('p1r.your_plate') }}
                         {% else %}
-                        <i class="fas fa-image me-2 text-success"></i>你的餐盘
+                        <i class="fas fa-image me-2 text-success"></i>{{ _('p1r.your_leftover') }}
                         {% endif %}
                     </h5>
                 </div>
                 <div class="card-body text-center">
-                    <img src="{{ result.image_url }}" alt="餐盘照片" class="img-fluid rounded-3 shadow-sm" style="max-height:400px;">
-                    <p class="text-muted small mt-2">分析时间：{{ result.timestamp }}</p>
+                    <img src="{{ result.image_url }}" alt="plate photo" class="img-fluid rounded-3 shadow-sm" style="max-height:400px;">
+                    <p class="text-muted small mt-2">{{ _('p1r.analysis_time') }}：{{ result.timestamp }}</p>
                     {% if result.ai_mode and 'closed_set' in result.ai_mode %}
-                    <span class="badge bg-info">🔒 菜品库匹配模式</span>
+                    <span class="badge bg-info">{{ _('p1r.closed_set_badge') }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -85,40 +70,32 @@
         <!-- 右侧：结果 -->
         <div class="col-lg-7 reveal reveal-right">
             {% if result.mode == 'calorie' and result.calorie_info %}
-            <!-- ====== 热量追踪模式 ====== -->
+            <!-- 热量追踪模式 -->
             <div class="card border-0 shadow-lg mb-3">
                 <div class="card-body p-4 text-center">
-                    <h5 class="text-muted mb-3">🔥 本次拿菜热量</h5>
+                    <h5 class="text-muted mb-3">{{ _('p1r.this_round_cal') }}</h5>
                     <div class="display-3 fw-bold text-danger mb-2">{{ result.calorie_info.this_round }}</div>
-                    <span class="text-muted">kcal</span>
-
-                    <!-- 累积进度 -->
+                    <span class="text-muted">{{ _('p1.calorie_unit') }}</span>
                     <div class="mt-4">
                         <div class="d-flex justify-content-between mb-1">
-                            <small>累积热量</small>
+                            <small>{{ _('p1r.cumulative') }}</small>
                             <small class="fw-bold {% if result.calorie_info.threshold_reached %}text-danger{% endif %}">
-                                {{ result.calorie_info.total }} / {{ result.calorie_info.threshold }} kcal
+                                {{ result.calorie_info.total }} / {{ result.calorie_info.threshold }} {{ _('p1.calorie_unit') }}
                             </small>
                         </div>
                         <div class="progress calorie-progress" style="height: 20px;">
                             {% set pct = (result.calorie_info.total / result.calorie_info.threshold * 100)|int %}
                             {% set pct = [pct, 100]|min %}
                             <div class="progress-bar calorie-progress-bar animate-once
-                                {% if pct >= 100 %}bg-danger
-                                {% elif pct >= 75 %}bg-warning
-                                {% else %}bg-info{% endif %}"
+                                {% if pct >= 100 %}bg-danger{% elif pct >= 75 %}bg-warning{% else %}bg-info{% endif %}"
                                 role="progressbar" data-width="{{ pct }}%" style="width:0%;"
-                                aria-valuenow="{{ result.calorie_info.total }}" aria-valuemin="0"
-                                aria-valuemax="{{ result.calorie_info.threshold }}">
-                                {{ pct }}%
-                            </div>
+                                aria-valuenow="{{ result.calorie_info.total }}" aria-valuemin="0" aria-valuemax="{{ result.calorie_info.threshold }}">{{ pct }}%</div>
                         </div>
                     </div>
-
                     {% if result.calorie_info.threshold_reached %}
                     <div class="alert alert-warning mt-3 border-0 shadow-sm">
-                        <h6><i class="fas fa-bell me-2"></i>已达提醒阈值！</h6>
-                        <p class="mb-0 small">肚肚已经圆滚滚啦！先吃完这些，不够再来拿嘛~ 🥰</p>
+                        <h6><i class="fas fa-bell me-2"></i>{{ _('p1r.threshold_reached_title') }}</h6>
+                        <p class="mb-0 small">{{ _('p1r.threshold_reached_msg') }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -127,39 +104,33 @@
             <!-- 菜品热量明细 -->
             <div class="card border-0 shadow-lg">
                 <div class="card-header bg-white border-0">
-                    <h5 class="mb-0"><i class="fas fa-list me-2 text-danger"></i>本盘菜品热量明细</h5>
+                    <h5 class="mb-0"><i class="fas fa-list me-2 text-danger"></i>{{ _('p1r.calorie_detail') }}</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>菜品</th>
-                                    <th>类别</th>
-                                    <th>份量</th>
-                                    <th>热量</th>
+                                    <th>{{ _('p1r.table_dish') }}</th>
+                                    <th>{{ _('p1r.table_category') }}</th>
+                                    <th>{{ _('p1r.table_portion') }}</th>
+                                    <th>{{ _('p1r.table_calories') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in result.calorie_info['items'] %}
                                 <tr>
-                                    <td><strong>{{ item.name }}</strong></td>
-                                    <td><span class="badge bg-secondary">{{ item.category }}</span></td>
+                                    <td><strong>{{ dn(item.name) }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ cn(item.category) }}</span></td>
                                     <td><span class="badge bg-light text-dark">{{ item.estimated_original_portion or '中份' }}</span></td>
-                                    <td>
-                                        <span class="fw-bold text-danger">{{ item.calories }}</span>
-                                        <small class="text-muted">kcal</small>
-                                    </td>
+                                    <td><span class="fw-bold text-danger">{{ item.calories }}</span> <small class="text-muted">kcal</small></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <td colspan="3" class="text-end fw-bold">本盘合计</td>
-                                    <td>
-                                        <span class="fw-bold fs-5 text-danger">{{ result.calorie_info.this_round }}</span>
-                                        <small>kcal</small>
-                                    </td>
+                                    <td colspan="3" class="text-end fw-bold">{{ _('p1r.table_total') }}</td>
+                                    <td><span class="fw-bold fs-5 text-danger">{{ result.calorie_info.this_round }}</span> <small>kcal</small></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -168,22 +139,18 @@
             </div>
 
             {% else %}
-            <!-- ====== 剩食评分模式（原有） ====== -->
+            <!-- 剩食评分模式 -->
             <div class="card border-0 shadow-lg mb-3">
                 <div class="card-body p-4 text-center">
                     <div class="stars mb-3">
                         {% for i in range(5) %}
-                            {% if i < result.discount.stars %}
-                                <i class="fas fa-star fa-2x text-warning"></i>
-                            {% else %}
-                                <i class="far fa-star fa-2x text-muted"></i>
-                            {% endif %}
+                            {% if i < result.discount.stars %}<i class="fas fa-star fa-2x text-warning"></i>{% else %}<i class="far fa-star fa-2x text-muted"></i>{% endif %}
                         {% endfor %}
                     </div>
                     <div class="score-circle mx-auto mb-3" style="--score: {{ result.score }}%">
                         <div class="score-inner">
                             <span class="score-number display-4 fw-bold">{{ result.score }}</span>
-                            <span class="score-unit">/ 100分</span>
+                            <span class="score-unit">{{ _('p1r.score_unit') }}</span>
                         </div>
                     </div>
                     <h4 class="fw-bold mb-2">{{ result.discount.level }}</h4>
@@ -192,9 +159,8 @@
                                 {% if result.discount.stars >= 4 %}bg-success text-white
                                 {% elif result.discount.stars == 3 %}bg-info text-white
                                 {% elif result.discount.stars == 2 %}bg-warning
-                                {% else %}bg-danger text-white{% endif %}"
-                         style="max-width: 200px;">
-                        <div class="small">可获得折扣</div>
+                                {% else %}bg-danger text-white{% endif %}" style="max-width: 200px;">
+                        <div class="small">{{ _('p2r.save_label') if lang == 'zh-CN' else ('Save' if lang == 'en' else '省') }}</div>
                         <div class="display-4 fw-bold">{{ result.discount.discount_text }}</div>
                     </div>
                     <p class="fw-bold">{{ result.discount.msg }}</p>
@@ -203,37 +169,31 @@
 
             <div class="card border-0 shadow-lg">
                 <div class="card-header bg-white border-0">
-                    <h5 class="mb-0"><i class="fas fa-search me-2 text-primary"></i>AI识别详情</h5>
+                    <h5 class="mb-0"><i class="fas fa-search me-2 text-primary"></i>{{ _('p1r.ai_detail_title') }}</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <span class="text-muted">整体浪费率：</span>
+                        <span class="text-muted">{{ _('p1r.overall_waste') }}：</span>
                         {% set wp = result.analysis.overall_waste_percentage %}
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar animate-once {% if wp < 20 %}bg-success{% elif wp < 50 %}bg-warning{% else %}bg-danger{% endif %}"
-                                 role="progressbar" data-width="{{ wp }}%" style="width:0%;">
-                                <strong>{{ wp }}%</strong>
-                            </div>
+                                 role="progressbar" data-width="{{ wp }}%" style="width:0%;"><strong>{{ wp }}%</strong></div>
                         </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
-                                <tr><th>食物名称</th><th>类别</th><th>剩余比例</th><th>权重</th></tr>
+                                <tr><th>{{ _('p1r.table_dish') }}</th><th>{{ _('p1r.table_category') }}</th><th>{{ _('p1r.table_remain') }}</th><th>{{ _('p1r.table_weight') }}</th></tr>
                             </thead>
                             <tbody>
                                 {% for item in result.analysis['items'] %}
                                 <tr>
-                                    <td><strong>{{ item.name }}</strong></td>
-                                    <td><span class="badge bg-secondary">{{ item.category }}</span></td>
+                                    <td><strong>{{ dn(item.name) }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ cn(item.category) }}</span></td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="progress flex-grow-1 me-2" style="height: 8px;">
-                                                <div class="progress-bar
-                                                    {% if item.estimated_remaining_percentage < 30 %}bg-success
-                                                    {% elif item.estimated_remaining_percentage < 60 %}bg-warning
-                                                    {% else %}bg-danger{% endif %}"
-                                                    style="width: {{ item.estimated_remaining_percentage }}%"></div>
+                                                <div class="progress-bar {% if item.estimated_remaining_percentage < 30 %}bg-success{% elif item.estimated_remaining_percentage < 60 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ item.estimated_remaining_percentage }}%"></div>
                                             </div>
                                             <span class="small">{{ item.estimated_remaining_percentage }}%</span>
                                         </div>
@@ -253,11 +213,10 @@
     <!-- 操作按钮 -->
     <div class="text-center mt-4">
         <a href="/product1" class="btn btn-outline-success btn-lg me-3">
-            <i class="fas fa-redo me-2"></i>
-            {% if result.mode == 'calorie' %}再拍一张{% else %}重新分析{% endif %}
+            <i class="fas fa-redo me-2"></i>{% if result.mode == 'calorie' %}{{ _('p1r.retry_btn') }}{% else %}{{ _('p1r.retry_waste_btn') }}{% endif %}
         </a>
         <a href="/product2" class="btn btn-primary btn-lg">
-            <i class="fas fa-utensils me-2"></i>体验剩菜搭配
+            <i class="fas fa-utensils me-2"></i>{{ _('p1r.try_match_btn') }}
         </a>
     </div>
 </div>
@@ -265,34 +224,26 @@
 
 {% block extra_scripts %}
 <script>
+var P1R_T = {
+    msg_1: '{{ _("p1r.cute_title")|safe }}',
+    msg_template: '{{ _("demo.final_msg_1")|safe }}'.replace('累积约','').replace('累積約','').replace('About ',''),
+};
 function dismissReminder() {
     const el = document.getElementById('cuteReminder');
-    if (el) {
-        el.style.opacity = '0';
-        el.style.transition = 'opacity 0.3s';
-        setTimeout(function() { el.style.display = 'none'; }, 300);
-    }
+    if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(function() { el.style.display = 'none'; }, 300); }
 }
-
-// 提醒语随机轮换
 const reminderMessages = [
-    "你已经拿了 <strong>TOTAL</strong> kcal 的食物，再拿可能吃不下，别让我变成浪费的小可怜呀~ 💚",
-    "肚肚已经圆滚滚啦！已经 <strong>TOTAL</strong> kcal 了，先吃完这些，不够再来拿嘛~ 🥰",
-    "吃到八分饱最舒服哦~ <strong>TOTAL</strong> kcal 差不多啦，剩下的留给下一轮吧！✨",
-    "嗝~ 光看着就饱啦！累积 <strong>TOTAL</strong> kcal，再吃要撑到走不动了~ 😋",
-    "小可爱提醒：<strong>TOTAL</strong> kcal 的快乐已经够啦，留点空间给甜品吧~ 🍰"
+    '{{ _("p1r.cute_title")|replace("🐉 ","")|replace("~","") }}: <strong>TOTAL</strong> kcal — ' + '{{ _("demo.final_msg_1")|striptags|replace("累积约","")|replace("累積約","")|replace("About ","") }}',
+    '{{ _("demo.final_msg_2")|safe }}',
+    '{{ _("demo.final_msg_3")|safe }}',
 ];
-
 document.addEventListener('DOMContentLoaded', function() {
     const msgEl = document.getElementById('reminderMsg');
     if (msgEl) {
-        const currentTotal = parseInt('{{ result.calorie_info.total if result.calorie_info else 0 }}') || 0;
+        const total = parseInt('{{ result.calorie_info.total if result.calorie_info else 0 }}') || 0;
         const idx = Math.floor(Math.random() * reminderMessages.length);
-        const msg = reminderMessages[idx].replace('<strong>TOTAL</strong>', '<strong>' + currentTotal + '</strong>');
-        msgEl.innerHTML = msg;
+        msgEl.innerHTML = reminderMessages[idx].replace('<strong>TOTAL</strong>', '<strong>' + total + '</strong>');
     }
-
-    // 🎉 光盘英雄撒花特效
     var score = parseInt('{{ result.score if result.score else 0 }}') || 0;
     var isWasteMode = '{{ result.mode }}' !== 'calorie';
     if (isWasteMode && score >= 95 && typeof Confetti !== 'undefined') {

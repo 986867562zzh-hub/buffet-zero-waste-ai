@@ -295,6 +295,21 @@ T = {
     'p1r.cute_ok': {'zh-CN':'好的，我知道了','zh-TW':'好的，我知道了','en':'OK, Got It'},
     'p1r.cute_reset': {'zh-CN':'重置继续拿','zh-TW':'重置繼續拿','en':'Reset & Continue'},
     'p1r.score_unit': {'zh-CN':'/ 100分','zh-TW':'/ 100分','en':'/ 100'},
+    'p1.preview_alt': {'zh-CN':'预览','zh-TW':'預覽','en':'Preview'},
+    'p1.invalid_file': {'zh-CN':'请选择JPG/PNG/GIF/WebP格式的图片','zh-TW':'請選擇JPG/PNG/GIF/WebP格式的圖片','en':'Please select JPG/PNG/GIF/WebP format'},
+    'p1.ai_recognizing': {'zh-CN':'AI识别中...','zh-TW':'AI識別中...','en':'AI Analyzing...'},
+    'p1.ai_analyzing_long': {'zh-CN':'AI正在识别...','zh-TW':'AI正在識別...','en':'AI is analyzing...'},
+    'p1.history_empty': {'zh-CN':'还没有拍照记录哦~ 快去拿菜吧！','zh-TW':'還沒有拍照記錄哦~ 快去拿菜吧！','en':'No photos yet. Go grab some food!'},
+    'p1.reset_confirm': {'zh-CN':'确定要重新开始热量累积吗？之前的记录会被清除哦~','zh-TW':'確定要重新開始熱量累積嗎？之前的記錄會被清除哦~','en':'Reset calorie tracking? Previous records will be cleared.'},
+    'p1.reset_done': {'zh-CN':'已重置~ 去拿菜吧！','zh-TW':'已重置~ 去拿菜吧！','en':'Reset! Go grab some food!'},
+
+    # ── Product2 result remaining ──
+    'p2r.info_banner': {'zh-CN':'从 <strong>TOTAL</strong> 道AI识别剩余菜品中，筛选出 <strong>AVAIL</strong> 道可用菜品','zh-TW':'從 <strong>TOTAL</strong> 道AI識別剩餘菜品中，篩選出 <strong>AVAIL</strong> 道可用菜品','en':'From <strong>TOTAL</strong> identified dishes, <strong>AVAIL</strong> available'},
+    'p2r.role_staple': {'zh-CN':'主食','zh-TW':'主食','en':'Staple'},
+    'p2r.role_main': {'zh-CN':'主菜','zh-TW':'主菜','en':'Main'},
+    'p2r.role_side': {'zh-CN':'配菜','zh-TW':'配菜','en':'Side'},
+    'p2r.role_soup': {'zh-CN':'汤品','zh-TW':'湯品','en':'Soup'},
+    'p2r.source_manual': {'zh-CN':'手动选择','zh-TW':'手動選擇','en':'Manual Selection'},
 
     # ── 演示模式 8步 ──
     'demo.title': {'zh-CN':'演示模式 - 自助餐热量追踪','zh-TW':'演示模式 - 自助餐熱量追蹤','en':'Demo - Buffet Calorie Tracker'},
