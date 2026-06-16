@@ -26,16 +26,15 @@
                 </div>
                 <div class="col-md-4 text-center">
                     <span class="badge bg-info me-1">
-                        <i class="fas fa-robot me-1"></i>AI视觉识别
+                        <i class="fas fa-check-circle me-1"></i>{{ _('p2r.source_manual') }}
                     </span>
                     <span class="small text-muted">
-                        {{ result.photos_analyzed }}张照片 → {{ result.total_leftover_count }}道剩菜
+                        {{ result.total_leftover_count }} {{ _('p2r.leftover_count') }}
                     </span>
                 </div>
                 <div class="col-md-4 text-md-end mt-2 mt-md-0">
                     <span class="text-muted small">
-                        从 <strong>{{ result.total_leftover_count }}</strong> 道AI识别剩余菜品中，
-                        筛选出 <strong>{{ result.available_count }}</strong> 道可用菜品
+                        {{ _('p2r.info_banner')|replace('TOTAL', result.total_leftover_count|string)|replace('AVAIL', result.available_count|string)|safe }}
                     </span>
                     {% if result.image_urls %}
                     <div class="mt-1">
@@ -62,7 +61,7 @@
         {% if rec.id == 1 %}
         <div class="position-absolute top-0 start-50 translate-middle">
             <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
-                <i class="fas fa-crown me-1"></i>最佳推荐
+                <i class="fas fa-crown me-1"></i>{{ _('p2r.best_badge') }}
             </span>
         </div>
         {% endif %}
@@ -74,7 +73,7 @@
                     <p class="text-muted small mb-0">{{ rec.description }}</p>
                 </div>
                 <div class="col-md-6 text-md-end mt-2 mt-md-0">
-                    <span class="badge bg-success me-2">适配度 {{ rec.suitability_score }}分</span>
+                    <span class="badge bg-success me-2">{{ _('p2r.suitability') }} {{ rec.suitability_score }}{{ _('p2r.score_unit') }}</span>
                     <span class="badge bg-danger">{{ rec.discount_rate }}</span>
                 </div>
             </div>
@@ -125,11 +124,11 @@
                     <!-- 价格对比 -->
                     <div class="card bg-light mb-3">
                         <div class="card-body text-center py-3">
-                            <div class="text-muted small mb-1">原价</div>
+                            <div class="text-muted small mb-1">{{ _('p2r.original_price') }}</div>
                             <div class="text-decoration-line-through h4 text-muted">¥{{ rec.total_original_price }}</div>
-                            <div class="text-danger small mb-1">折扣价</div>
+                            <div class="text-danger small mb-1">{{ _('p2r.discount_price') }}</div>
                             <div class="display-6 fw-bold text-danger">¥{{ rec.total_discounted_price }}</div>
-                            <span class="badge bg-danger fs-6 mt-1">省 ¥{{ "%.1f"|format(rec.total_original_price - rec.total_discounted_price) }}</span>
+                            <span class="badge bg-danger fs-6 mt-1">{{ _('p2r.save_label') }} ¥{{ "%.1f"|format(rec.total_original_price - rec.total_discounted_price) }}</span>
                         </div>
                     </div>
 
