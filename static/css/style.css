@@ -1106,26 +1106,156 @@ body.dark-theme {
 }
 body.dark-theme { background-color: #0f172a; color: #e4e4e7; }
 body.dark-theme .navbar { background: linear-gradient(135deg, #0f172a, #1a3a2e) !important; }
-body.dark-theme .card { background: #1e293b; border-color: #334155 !important; }
-body.dark-theme .card .text-muted { color: #a1a1aa !important; }
-body.dark-theme .card .text-dark { color: #e4e4e7 !important; }
-body.dark-theme .bg-light { background: #0f172a !important; }
-body.dark-theme .bg-white { background: #1e293b !important; }
-body.dark-theme .table-light { background: #334155; color: #e4e4e7; }
+
+/* === 全局文字颜色 === */
+body.dark-theme h1,body.dark-theme h2,body.dark-theme h3,
+body.dark-theme h4,body.dark-theme h5,body.dark-theme h6,
+body.dark-theme .h1,body.dark-theme .h2,body.dark-theme .h3,
+body.dark-theme .h4,body.dark-theme .h5,body.dark-theme .h6 { color: #f1f5f9; }
+body.dark-theme p,body.dark-theme li,body.dark-theme span,
+body.dark-theme label,body.dark-theme strong,body.dark-theme small,
+body.dark-theme .fw-bold,body.dark-theme .fw-semibold { color: inherit; }
+body.dark-theme .text-dark { color: #f1f5f9 !important; }
+body.dark-theme .text-muted { color: #a1a1aa !important; }
+body.dark-theme a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item) { color: #60a5fa; }
+body.dark-theme .text-black,body.dark-theme .text-body { color: #e4e4e7 !important; }
+
+/* === 卡片 === */
+body.dark-theme .card { background: #1e293b; border-color: #334155 !important; color: #e4e4e7; }
+body.dark-theme .card-header { background: #1e293b; border-color: #334155; color: #e4e4e7; }
+body.dark-theme .card-body { color: #e4e4e7; }
+body.dark-theme .card-footer { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+body.dark-theme .bg-light { background: #0f172a !important; color: #e4e4e7; }
+body.dark-theme .bg-white { background: #1e293b !important; color: #e4e4e7; }
+body.dark-theme .border { border-color: #334155 !important; }
+
+/* === 表格 === */
 body.dark-theme .table { color: #e4e4e7; }
+body.dark-theme .table-light,
+body.dark-theme .table thead th,
+body.dark-theme thead.table-light { background: #334155; color: #e4e4e7; }
 body.dark-theme .table-hover tbody tr:hover { color: #e4e4e7; background: rgba(255,255,255,0.05); }
+body.dark-theme .table-striped tbody tr:nth-of-type(odd) { background: rgba(255,255,255,0.03); }
+
+/* === 表单 === */
+body.dark-theme .form-control,
+body.dark-theme .form-select { background: #334155; color: #e4e4e7; border-color: #475569; }
+body.dark-theme .form-control::placeholder { color: #64748b; }
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus { background: #3b4f6b; color: #fff; border-color: #2d8a56; }
+body.dark-theme .form-label { color: #cbd5e1; }
+body.dark-theme .input-group-text { background: #334155; color: #e4e4e7; border-color: #475569; }
+
+/* === 按钮 === */
+body.dark-theme .btn-outline-secondary { color: #cbd5e1; border-color: #475569; }
+body.dark-theme .btn-outline-secondary:hover { background: #475569; color: #fff; }
+body.dark-theme .btn-outline-primary { color: #60a5fa; border-color: #3b82f6; }
+body.dark-theme .btn-outline-success { color: #4ade80; border-color: #22c55e; }
+body.dark-theme .btn-outline-warning { color: #fbbf24; border-color: #f59e0b; }
+body.dark-theme .btn-outline-info { color: #38bdf8; border-color: #0ea5e9; }
+body.dark-theme .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+
+/* === 导航/面包屑 === */
+body.dark-theme .breadcrumb-item a { color: #60a5fa; }
+body.dark-theme .breadcrumb-item.active { color: #a1a1aa; }
+body.dark-theme .breadcrumb-item+.breadcrumb-item::before { color: #64748b; }
+body.dark-theme .nav-tabs .nav-link { color: #a1a1aa; }
+body.dark-theme .nav-tabs .nav-link.active { color: #e4e4e7; background: #1e293b; border-color: #334155; }
+
+/* === 下拉菜单 === */
+body.dark-theme .dropdown-menu { background: #1e293b; border-color: #334155; }
+body.dark-theme .dropdown-item { color: #e4e4e7; }
+body.dark-theme .dropdown-item:hover { background: #334155; color: #fff; }
+body.dark-theme .dropdown-item.active { background: #2d8a56; }
+body.dark-theme .dropdown-divider { border-color: #334155; }
+
+/* === 模态框 === */
+body.dark-theme .modal-content { background: #1e293b; color: #e4e4e7; }
+body.dark-theme .modal-header { border-color: #334155; }
+body.dark-theme .modal-footer { border-color: #334155; }
+
+/* === 警示/通知 === */
+body.dark-theme .alert { color: #e4e4e7; }
+body.dark-theme .alert-info { background: #1e3a5f; color: #bfdbfe; border-color: #1e40af; }
+body.dark-theme .alert-warning { background: #3b2f1a; color: #fde68a; border-color: #92400e; }
+body.dark-theme .alert-success { background: #1a3a2e; color: #bbf7d0; border-color: #166534; }
+body.dark-theme .alert-danger { background: #3b1a1a; color: #fecaca; border-color: #991b1b; }
+
+/* === 折叠面板 === */
 body.dark-theme .accordion-button { background: #1e293b; color: #e4e4e7; }
 body.dark-theme .accordion-button:not(.collapsed) { background: #334155; color: #e4e4e7; }
-body.dark-theme .accordion-body { background: #1e293b; }
-body.dark-theme .breadcrumb-item.active { color: #a1a1aa; }
-body.dark-theme .upload-zone { background: #1e293b; border-color: #475569; }
-body.dark-theme .upload-zone:hover { border-color: #2d8a56; background: #1a3a2e; }
-body.dark-theme .score-inner { background: #1e293b; }
-body.dark-theme footer { background: #0f172a !important; }
+body.dark-theme .accordion-body { background: #1e293b; color: #cbd5e1; }
+body.dark-theme .accordion-item { border-color: #334155; }
+
+/* === 列表组 === */
 body.dark-theme .list-group-item { background: #1e293b; color: #e4e4e7; border-color: #334155; }
-body.dark-theme .text-dark { color: #e4e4e7 !important; }
-body.dark-theme .modal-content { background: #1e293b; color: #e4e4e7; }
-body.dark-theme .form-control, body.dark-theme .form-select { background: #334155; color: #e4e4e7; border-color: #475569; }
+
+/* === 上传区 === */
+body.dark-theme .upload-zone { background: #1e293b; border-color: #475569; color: #a1a1aa; }
+body.dark-theme .upload-zone:hover { border-color: #2d8a56; background: #1a3a2e; }
+body.dark-theme .multi-upload-zone { background: #1e293b; border-color: #475569; }
+
+/* === 页脚 === */
+body.dark-theme footer { background: #0f172a !important; color: #94a3b8 !important; }
+body.dark-theme footer p { color: #94a3b8 !important; }
+
+/* === 首页特效 === */
+body.dark-theme .stat-label { color: #cbd5e1 !important; }
+body.dark-theme .workflow-step h5 { color: #f1f5f9; }
+body.dark-theme .workflow-step .text-muted { color: #a1a1aa !important; }
+body.dark-theme .tech-card h5 { color: #f1f5f9; }
+body.dark-theme .tech-card .text-muted { color: #a1a1aa !important; }
+body.dark-theme .feature-list li { color: #cbd5e1; }
+
+/* === Product1 拍照页 === */
+body.dark-theme .mode-tab { background: #1e293b; color: #a1a1aa; border-color: #334155; }
+body.dark-theme .mode-tab.active { background: #1a3a2e; color: #4ade80; border-color: #2d8a56; }
+body.dark-theme .mode-tab .tab-sub { color: #64748b; }
+body.dark-theme .calorie-ring-wrapper .ring-value { color: #f1f5f9; }
+body.dark-theme .ring-unit,body.dark-theme .ring-max { color: #a1a1aa; }
+body.dark-theme .discount-badge { color: #fff !important; }
+body.dark-theme .history-item { border-color: #334155; color: #cbd5e1; }
+body.dark-theme .score-inner { background: #1e293b; }
+
+/* === Product2 选菜页 === */
+body.dark-theme .dish-select-card { background: #1e293b !important; border-color: #334155 !important; color: #e4e4e7; }
+body.dark-theme .dish-select-card:hover { border-color: #2d8a56 !important; background: #1a2a3e !important; }
+body.dark-theme .dish-select-card.selected { background: #1a3a2e !important; border-color: #2d8a56 !important; }
+body.dark-theme .dish-select-card .text-muted { color: #a1a1aa !important; }
+body.dark-theme .dish-select-card .fw-bold { color: #f1f5f9; }
+body.dark-theme .dish-select-card .dish-check-mark { background: #475569; }
+body.dark-theme .dish-select-card.selected .dish-check-mark { background: #2d8a56; }
+body.dark-theme .dietary-option { color: #94a3b8; border-color: #475569; }
+body.dark-theme .dietary-option:hover { color: #e4e4e7; border-color: #2d8a56; }
+
+/* === Product2 结果页 === */
+body.dark-theme .meal-item-card { background: #1e293b !important; border-color: #334155 !important; color: #e4e4e7; }
+body.dark-theme .meal-item-card strong { color: #f1f5f9; }
+body.dark-theme .meal-item-card .text-muted { color: #a1a1aa !important; }
+body.dark-theme .nutrition-bar .small { color: #cbd5e1; }
+body.dark-theme .nutrition-bar strong { color: #f1f5f9; }
+
+/* === 演示模式 === */
+body.dark-theme .demo-step-item { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+body.dark-theme .demo-step-item.active { background: #1a3a2e; color: #e4e4e7; border-color: #2d8a56; }
+body.dark-theme .demo-step-item.completed { background: #1e293b; color: #4ade80; }
+body.dark-theme .demo-step-item .step-num { background: #334155; color: #e4e4e7; }
+body.dark-theme .demo-step-item.active .step-num { background: #2d8a56; }
+body.dark-theme .demo-identify-tag { background: rgba(45,138,86,0.95) !important; }
+body.dark-theme .demo-step-item strong { color: #f1f5f9; }
+body.dark-theme .demo-step-item .text-muted { color: #a1a1aa !important; }
+body.dark-theme .demo-image-container { background: #0f172a !important; }
+
+/* === 卡通弹窗 === */
+body.dark-theme .cute-reminder .reminder-card { background: #1e293b; color: #e4e4e7; }
+body.dark-theme .cute-reminder .reminder-title { color: #fbbf24; }
+body.dark-theme .cute-reminder .reminder-msg { color: #cbd5e1; }
+
+/* === 管理页面 === */
+body.dark-theme .admin-table td,body.dark-theme .admin-table th { color: #e4e4e7; }
+
+/* === Toast/通知 === */
+body.dark-theme .toast-custom { background: #1e293b; color: #e4e4e7; border-color: #334155; }
 
 /* ================================================================
    优化2: 滚动渐入揭示动画 (Scroll Reveal)
