@@ -1440,6 +1440,94 @@ main {
     z-index: 10001;
     text-decoration: none;
 }
-.skip-link:focus {
-    top: 8px;
+.skip-link:focus { top: 8px; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: Hero背景纹理 (#5)
+   ═══════════════════════════════════════════ */
+.hero-section::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; bottom:0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 实时数据横幅 (#6)
+   ═══════════════════════════════════════════ */
+.impact-banner { background: linear-gradient(135deg, #065f46, #047857); }
+.impact-banner .impact-item { padding: 12px 20px; }
+.impact-banner .impact-number { font-size: 1.8rem; font-weight: 800; color: #fbbf24; }
+.impact-banner .impact-label { font-size: 0.75rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 工作流图标动画 (#7)
+   ═══════════════════════════════════════════ */
+.workflow-step .step-icon { transition: transform 0.3s; }
+.workflow-step:hover .step-icon { transform: scale(1.15); }
+.workflow-step:nth-child(1):hover .step-icon i { animation: shutterClick 0.6s ease; }
+.workflow-step:nth-child(2):hover .step-icon i { animation: gearSpin 1s linear; }
+.workflow-step:nth-child(3):hover .step-icon i { animation: chartGrow 0.8s ease-out; }
+.workflow-step:nth-child(4):hover .step-icon i { animation: tagPop 0.5s ease; }
+@keyframes shutterClick { 0%,100%{opacity:1} 50%{opacity:0.3;transform:scale(1.3)} }
+@keyframes gearSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+@keyframes chartGrow { 0%{transform:scaleY(0.3);opacity:0} 100%{transform:scaleY(1);opacity:1} }
+@keyframes tagPop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.3)} 100%{transform:scale(1);opacity:1} }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 热量环超阈值震动 (#9)
+   ═══════════════════════════════════════════ */
+@keyframes shakeRing { 0%,100%{transform:translateX(0)} 10%,50%,90%{transform:translateX(-4px)} 30%,70%{transform:translateX(4px)} }
+.calorie-ring-wrapper.shaking { animation: shakeRing 0.6s ease-in-out 3; }
+.calorie-ring-wrapper.shaking .ring-progress { stroke: #ff4757 !important; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: Product2结果卡片入场错位动画 (#3)
+   ═══════════════════════════════════════════ */
+.product2-result-card { animation: cardSlideUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.product2-result-card:nth-child(1) { animation-delay: 0.05s; }
+.product2-result-card:nth-child(2) { animation-delay: 0.2s; }
+.product2-result-card:nth-child(3) { animation-delay: 0.35s; }
+@keyframes cardSlideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+/* 最佳推荐金色脉冲 */
+.best-pick-glow { animation: goldPulse 2s ease-in-out infinite; }
+@keyframes goldPulse { 0%,100%{box-shadow:0 0 0 0 rgba(234,179,8,0.4)} 50%{box-shadow:0 0 0 12px rgba(234,179,8,0)} }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 下单倒计时 (#13)
+   ═══════════════════════════════════════════ */
+.countdown-bar { height:6px; border-radius:3px; background:#e9ecef; overflow:hidden; margin:8px 0; }
+.countdown-bar .countdown-fill { height:100%; background:linear-gradient(90deg,#22c55e,#f59e0b,#ef4444); border-radius:3px; transition:width 1s linear; width:100%; }
+.countdown-text { font-size:0.8rem; color:#64748b; }
+.countdown-text.urgent { color:#ef4444; font-weight:bold; animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 导航栏当前位置指示器 (#17)
+   ═══════════════════════════════════════════ */
+.navbar .nav-link.active-page { background: rgba(255,255,255,0.2); border-radius:8px; font-weight:600; }
+.navbar .nav-link.active-page::after { content:''; display:block; width:60%; height:2px; background:#fbbf24; margin:2px auto 0; border-radius:1px; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 页脚升级 (#8)
+   ═══════════════════════════════════════════ */
+.footer-links a { color:#94a3b8; text-decoration:none; margin:0 8px; transition:color 0.2s; }
+.footer-links a:hover { color:#fbbf24; }
+.footer-tech-badge { display:inline-block; background:rgba(255,255,255,0.08); color:#94a3b8; padding:3px 10px; border-radius:12px; font-size:0.7rem; margin:2px 4px; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: Loading 趣味数据 (#1)
+   ═══════════════════════════════════════════ */
+.loading-fact { font-size:0.85rem; color:#a1a1aa; margin-top:12px; min-height:40px; opacity:0; transition:opacity 0.5s; }
+.loading-fact.show { opacity:1; }
+.loading-fact .fact-emoji { font-size:1.4rem; display:block; margin-bottom:4px; }
+
+/* ═══════════════════════════════════════════
+   v2.6 增强: 响应式 - 手机端菜品卡片单列 (#14)
+   ═══════════════════════════════════════════ */
+@media (max-width:576px) {
+    #dishGrid .col-6 { width:100%; }
+    .impact-banner .impact-number { font-size:1.3rem; }
+    .hero-stats { flex-wrap:wrap; gap:8px; }
 }

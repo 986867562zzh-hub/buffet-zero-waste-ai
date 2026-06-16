@@ -243,6 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const total = parseInt('{{ result.calorie_info.total if result.calorie_info else 0 }}') || 0;
         const idx = Math.floor(Math.random() * reminderMessages.length);
         msgEl.innerHTML = reminderMessages[idx].replace('<strong>TOTAL</strong>', '<strong>' + total + '</strong>');
+        // #9: 热量超标震动
+        if (typeof triggerCalorieShake !== 'undefined') {
+            setTimeout(function() { triggerCalorieShake(); }, 500);
+        }
     }
     var score = parseInt('{{ result.score if result.score else 0 }}') || 0;
     var isWasteMode = '{{ result.mode }}' !== 'calorie';

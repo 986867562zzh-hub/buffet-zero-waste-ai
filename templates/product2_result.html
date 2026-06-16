@@ -57,7 +57,7 @@
     </h4>
 
     {% for rec in result.recommendations %}
-    <div class="card border-0 shadow-lg mb-4 {% if rec.id == 1 %}border-success border-2{% endif %} reveal {% if loop.index0 % 2 == 0 %}reveal-left{% else %}reveal-right{% endif %} reveal-delay-{{ loop.index0 }}">
+    <div class="card border-0 shadow-lg mb-4 product2-result-card {% if rec.id == 1 %}border-success border-2 best-pick-glow{% endif %} reveal {% if loop.index0 % 2 == 0 %}reveal-left{% else %}reveal-right{% endif %} reveal-delay-{{ loop.index0 }}">
         {% if rec.id == 1 %}
         <div class="position-absolute top-0 start-50 translate-middle">
             <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
@@ -230,11 +230,12 @@
                         <strong>酒店自助餐厅前台</strong>
                     </div>
                 </div>
-                <div class="alert alert-warning py-2 small mb-3">
-                    <i class="fas fa-clock me-1"></i> 请于 <strong>30分钟</strong> 内到店取餐
+                <div class="countdown-bar"><div class="countdown-fill" id="countdownFill"></div></div>
+                <div class="countdown-text" id="countdownText">
+                    <i class="fas fa-clock me-1"></i> {{ _('p2r.order_time_warn')|striptags }}
                 </div>
-                <button type="button" class="btn btn-success btn-lg w-100" data-bs-dismiss="modal">
-                    <i class="fas fa-check me-1"></i>我知道了
+                <button type="button" class="btn btn-success btn-lg w-100" data-bs-dismiss="modal" onclick="stopCountdown()">
+                    <i class="fas fa-check me-1"></i>{{ _('p2r.order_ok') }}
                 </button>
             </div>
         </div>
@@ -244,15 +245,44 @@
 
 {% block extra_scripts %}
 <script>
+var _countdownTimer = null;
+function startCountdown() {
+    var totalSec = 1800; // 30 min
+    var fill = document.getElementById('countdownFill');
+    var text = document.getElementById('countdownText');
+    if (!fill || !text) return;
+    stopCountdown();
+    function tick() {
+        totalSec--;
+        var pct = (totalSec / 1800 * 100);
+        fill.style.width = pct + '%';
+        var min = Math.floor(totalSec / 60);
+        var sec = totalSec % 60;
+        text.innerHTML = '<i class="fas fa-clock me-1"></i> ' + min + ':' + (sec < 10 ? '0' : '') + sec + ' ' + ('{{ lang }}' === 'en' ? 'remaining' : '{{ lang }}' === 'zh-TW' ? '內取餐' : '内取餐');
+        if (totalSec <= 300) text.classList.add('urgent');
+        if (totalSec <= 0) { stopCountdown(); text.textContent = '{{ "Time expired!" if lang == "en" else ("已超时！" if lang == "zh-CN" else "已超時！") }}'; }
+        else _countdownTimer = setTimeout(tick, 1000);
+    }
+    tick();
+}
+function stopCountdown() {
+    if (_countdownTimer) { clearTimeout(_countdownTimer); _countdownTimer = null; }
+}
+
 function showOrderModal(comboName, price, orderId) {
     document.getElementById("modalOrderId").textContent = orderId;
     document.getElementById("modalComboName").textContent = comboName;
     document.getElementById("modalPrice").textContent = "¥" + price;
     var modal = new bootstrap.Modal(document.getElementById("orderModal"));
     modal.show();
-    // 🎉 下单成功撒花
+    // 倒计时
+    setTimeout(startCountdown, 300);
+    // 🎉 下单成功撒花+音效
     if (typeof Confetti !== 'undefined') {
         setTimeout(function() { Confetti.fire(4000); }, 300);
+    }
+    if (typeof SoundFX !== 'undefined') {
+        SoundFX.success();
     }
 }
 </script>

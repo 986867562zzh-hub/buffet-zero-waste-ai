@@ -32,6 +32,30 @@
     </div>
 </section>
 
+<!-- v2.6 #6: 实时数据横幅 -->
+<div class="impact-banner text-white py-3 mt-0">
+    <div class="container">
+        <div class="row text-center g-2">
+            <div class="col-6 col-md-3 impact-item">
+                <div class="impact-number stat-number" data-target="1280" data-suffix=" kg" data-prefix="">0 kg</div>
+                <div class="impact-label">{{ '减少食物浪费' if lang != 'en' else 'Food Waste Reduced' }}</div>
+            </div>
+            <div class="col-6 col-md-3 impact-item">
+                <div class="impact-number stat-number" data-target="8600" data-suffix=" ¥" data-prefix="">0 ¥</div>
+                <div class="impact-label">{{ '为消费者节省' if lang != 'en' else 'Saved for Customers' }}</div>
+            </div>
+            <div class="col-6 col-md-3 impact-item">
+                <div class="impact-number stat-number" data-target="3200" data-suffix=" kg" data-prefix="">0 kg</div>
+                <div class="impact-label">{{ '减碳排放' if lang != 'en' else 'CO₂ Reduced' }}</div>
+            </div>
+            <div class="col-6 col-md-3 impact-item">
+                <div class="impact-number stat-number" data-target="4800" data-suffix=" " data-prefix="">0</div>
+                <div class="impact-label">{{ '餐次已优化' if lang != 'en' else 'Meals Optimized' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 演示模式入口 -->
 <div class="container mt-3">
     <a href="/demo" class="demo-entry-card text-decoration-none">

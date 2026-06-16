@@ -12,7 +12,7 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     {% block extra_head %}{% endblock %}
 </head>
-<body class="dark-mode-support">
+<body class="dark-mode-support" data-lang="{{ lang }}">
 <a href="#main-content" class="skip-link">跳到主要内容</a>
 
     <!-- 导航栏 -->
@@ -81,11 +81,22 @@
 <div id="toastContainer" class="toast-container-custom" aria-live="polite" aria-atomic="true"></div>
 
 
-    <!-- 页脚 -->
+    <!-- 页脚 v2.6增强 -->
     <footer class="footer mt-auto py-4 bg-dark text-white-50">
         <div class="container text-center">
             <p class="mb-1">🍽️ {{ _('footer.title') }}</p>
             <p class="mb-0 small">{{ _('footer.school') }}</p>
+            <div class="footer-links mt-2 small">
+                <a href="https://github.com/986867562zzh-hub/buffet-zero-waste-ai" target="_blank" rel="noopener"><i class="fab fa-github me-1"></i>GitHub</a>
+                <a href="/demo"><i class="fas fa-play me-1"></i>{{ _('demo.badge') }}</a>
+            </div>
+            <div class="mt-2">
+                <span class="footer-tech-badge">Python Flask</span>
+                <span class="footer-tech-badge">DeepSeek v4</span>
+                <span class="footer-tech-badge">Pillow</span>
+                <span class="footer-tech-badge">Bootstrap 5</span>
+                <span class="footer-tech-badge">v2.6</span>
+            </div>
         </div>
     </footer>
 

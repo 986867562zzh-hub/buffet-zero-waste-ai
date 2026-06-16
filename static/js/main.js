@@ -533,4 +533,192 @@ function animateProgressBars() {
 document.addEventListener('DOMContentLoaded', function() {
     animateCounters();
     animateProgressBars();
+    initImpactBanner();
+    initActiveNav();
+    initKeyboardShortcuts();
 });
+
+// ═══════════════════════════════════════════
+// v2.6 #1: Loading趣味数据轮播
+// ═══════════════════════════════════════════
+var LOADING_FACTS = [
+    {emoji:'🌍', text:{'zh-CN':'全球每年浪费13亿吨食物，相当于每人每年浪费约150公斤','zh-TW':'全球每年浪費13億噸食物，相當於每人每年浪費約150公斤','en':'1.3 billion tons of food wasted globally each year — ~150kg per person'}},
+    {emoji:'💰', text:{'zh-CN':'中国自助餐人均浪费约150-200g/餐，相当于每年浪费500万吨','zh-TW':'中國自助餐人均浪費約150-200g/餐，相當於每年浪費500萬噸','en':'Buffet diners waste 150-200g per meal on average — 5 million tons yearly in China'}},
+    {emoji:'🌱', text:{'zh-CN':'减少食物浪费是应对气候变化的#1行动，效果超过电动车推广','zh-TW':'減少食物浪費是應對氣候變化的#1行動，效果超過電動車推廣','en':'Reducing food waste is the #1 climate action — more effective than EV adoption'}},
+    {emoji:'🍽️', text:{'zh-CN':'光盘行动每年可为中国减少约6400万吨碳排放','zh-TW':'光盤行動每年可為中國減少約6400萬噸碳排放','en':'Clean Plate campaigns could reduce China\'s carbon emissions by 64 million tons/year'}},
+    {emoji:'💡', text:{'zh-CN':'每节省1公斤牛肉，相当于节约了15000升水资源','zh-TW':'每節省1公斤牛肉，相當於節約了15000升水資源','en':'Saving 1kg of beef saves 15,000 liters of water'},
+];
+
+var _factTimer = null;
+var _currentFactIdx = 0;
+
+function startLoadingFacts() {
+    var factEl = document.getElementById('loadingFact');
+    if (!factEl || _factTimer) return;
+    _currentFactIdx = Math.floor(Math.random() * LOADING_FACTS.length);
+    function showNextFact() {
+        var f = LOADING_FACTS[_currentFactIdx];
+        var lang = (document.body.dataset.lang || 'zh-CN');
+        factEl.innerHTML = '<span class="fact-emoji">' + f.emoji + '</span>' + (f.text[lang] || f.text['zh-CN']);
+        factEl.classList.remove('show');
+        void factEl.offsetWidth;
+        factEl.classList.add('show');
+        _currentFactIdx = (_currentFactIdx + 1) % LOADING_FACTS.length;
+    }
+    showNextFact();
+    _factTimer = setInterval(showNextFact, 4000);
+}
+
+function stopLoadingFacts() {
+    if (_factTimer) { clearInterval(_factTimer); _factTimer = null; }
+}
+
+// 增强 showLoading
+var _origShowLoading = showLoading;
+showLoading = function(text, subText) {
+    _origShowLoading(text, subText);
+    var card = document.querySelector('.loading-card');
+    if (card) {
+        var factDiv = document.createElement('div');
+        factDiv.id = 'loadingFact';
+        factDiv.className = 'loading-fact';
+        card.appendChild(factDiv);
+        setTimeout(startLoadingFacts, 500);
+    }
+};
+var _origHideLoading = hideLoading;
+hideLoading = function() {
+    stopLoadingFacts();
+    _origHideLoading();
+};
+
+// ═══════════════════════════════════════════
+// v2.6 #2: 音效系统 (Web Audio API, 无需外部文件)
+// ═══════════════════════════════════════════
+var SoundFX = {
+    _ctx: null,
+    _getCtx: function() {
+        if (!this._ctx) {
+            try { this._ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+        return this._ctx;
+    },
+    playTone: function(freq, duration, type, vol) {
+        var ctx = this._getCtx();
+        if (!ctx) return;
+        type = type || 'sine'; vol = vol || 0.15; duration = duration || 0.3;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+    },
+    ding: function() {
+        this.playTone(880, 0.15, 'sine', 0.12);
+        setTimeout(function(self) { self.playTone(1100, 0.2, 'sine', 0.1); }, 100, this);
+    },
+    success: function() {
+        var notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+        notes.forEach(function(freq, i) {
+            setTimeout(function(self) { self.playTone(freq, 0.4, 'triangle', 0.1); }, i * 120, this);
+        }, this);
+    },
+    shake: function() {
+        this.playTone(80, 0.5, 'sawtooth', 0.04);
+    }
+};
+
+// 撒花时播放叮咚
+var _origConfettiFire = Confetti.fire;
+Confetti.fire = function(duration) {
+    SoundFX.ding();
+    _origConfettiFire(duration);
+};
+
+// 下单成功播放庆祝音效 — 由 showOrderModal 中触发
+var _origShowOrderModal = window.showOrderModal;
+if (typeof _origShowOrderModal === 'function') {
+    window.showOrderModal = function(name, price, orderId) {
+        SoundFX.success();
+        _origShowOrderModal(name, price, orderId);
+    };
+}
+
+// ═══════════════════════════════════════════
+// v2.6 #6: 首页实时数据横幅
+// ═══════════════════════════════════════════
+function initImpactBanner() {
+    var counters = document.querySelectorAll('.impact-number[data-target]');
+    if (!counters.length) return;
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (!entry.isIntersecting) return;
+            var el = entry.target;
+            var target = parseInt(el.getAttribute('data-target'));
+            var suffix = el.getAttribute('data-suffix') || '';
+            var prefix = el.getAttribute('data-prefix') || '';
+            var duration = 2000; var startTime = null;
+            function step(ts) {
+                if (!startTime) startTime = ts;
+                var p = Math.min((ts - startTime) / duration, 1);
+                var eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+                el.textContent = prefix + Math.floor(eased * target) + suffix;
+                if (p < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+            observer.unobserve(el);
+        });
+    }, { threshold: 0.3 });
+    counters.forEach(function(c) { observer.observe(c); });
+}
+
+// ═══════════════════════════════════════════
+// v2.6 #9: 热量环震动触发
+// ═══════════════════════════════════════════
+function triggerCalorieShake() {
+    var ring = document.querySelector('.calorie-ring-wrapper');
+    if (!ring || ring.classList.contains('shaking')) return;
+    ring.classList.add('shaking');
+    SoundFX.shake();
+    setTimeout(function() { ring.classList.remove('shaking'); }, 2000);
+}
+// hook: 产品一结果页热量达标时调用
+
+// ═══════════════════════════════════════════
+// v2.6 #17: 导航栏当前位置高亮
+// ═══════════════════════════════════════════
+function initActiveNav() {
+    var path = window.location.pathname;
+    document.querySelectorAll('.navbar .nav-link').forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href === '/' && path === '/') link.classList.add('active-page');
+        else if (href && href !== '/' && path.startsWith(href)) link.classList.add('active-page');
+    });
+}
+
+// ═══════════════════════════════════════════
+// v2.6 #18: 菜品网格键盘快捷键 (数字键1-9设份数)
+// ═══════════════════════════════════════════
+function initKeyboardShortcuts() {
+    var grid = document.getElementById('dishGrid');
+    if (!grid) return;
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        var key = parseInt(e.key);
+        if (key >= 1 && key <= 9) {
+            var cards = document.querySelectorAll('.dish-select-card.selected');
+            if (cards.length > 0) {
+                var lastSelected = cards[cards.length - 1];
+                var qtyInput = lastSelected.querySelector('.qty-input');
+                if (qtyInput) {
+                    qtyInput.value = key;
+                    qtyInput.dispatchEvent(new Event('change', {bubbles: true}));
+                    var toastMsg = {1:'一份',2:'两份',3:'三份',4:'四份',5:'五份',6:'六份',7:'七份',8:'八份',9:'九份'};
+                    showToast(lastSelected.dataset.dishName, (toastMsg[key] || key + ' servings'), 'info');
+                }
+            }
+        }
+    });
+}
