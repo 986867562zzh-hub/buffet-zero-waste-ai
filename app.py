@@ -2407,33 +2407,94 @@ PRODUCT2_DISHES = [
     {"id": "qingzhengluyu",   "name": "清蒸鲈鱼", "category": "海鲜", "photo": "清蒸鲈鱼.jpg"},
 ]
 
-def _generate_blind_box(available_dishes, target_weight=800):
+def _generate_blind_box(available_dishes, target_weight=800, num_combos=3):
     """
-    盲盒搭配算法:
+    盲盒搭配算法 v2.7:
     - 固定800g总重目标
-    - 从可用菜品中随机选3道（不足3道则全选）
+    - 加权随机选3道菜（克数多优先但不过分，用sqrt克重）
+    - 生成3个不同方案
     - 按可用克数比例分配目标重量
     - 总可用克数 < 800g 时，全部使用
     """
     import random
+    import math
 
     n_available = len(available_dishes)
 
-    # 随机选3道（或全选）
-    if n_available <= 3:
+    # 不足3道菜，只能生成1个方案
+    if n_available < 3:
         selected = available_dishes[:]
-    else:
-        selected = random.sample(available_dishes, 3)
+        total_avail = sum(d['grams'] for d in selected)
+        effective = min(target_weight, total_avail)
+        items = _distribute_grams(selected, effective, total_avail)
+        return {
+            'recommendations': [{
+                'id': 1, 'items': items,
+                'total_grams': sum(i['grams'] for i in items),
+                'under_target': total_avail < target_weight
+            }],
+            'insufficient': True
+        }
 
-    total_available_grams = sum(d['grams'] for d in selected)
-    effective_weight = min(target_weight, total_available_grams)
+    # sqrt克数作为权重（克数多的优先但不过分）
+    weights = [math.sqrt(max(d['grams'], 1)) for d in available_dishes]
 
-    # 按比例分配
+    combos = []
+    used_sets = []
+
+    for combo_idx in range(num_combos):
+        # 加权不放回抽样，尽量不生成重复组合
+        for attempt in range(30):
+            selected = _weighted_sample_3(available_dishes, weights)
+            key = tuple(sorted(d['name'] for d in selected))
+            if key not in used_sets or attempt >= 29:
+                used_sets.append(key)
+                break
+
+        total_avail = sum(d['grams'] for d in selected)
+        effective = min(target_weight, total_avail)
+        items = _distribute_grams(selected, effective, total_avail)
+
+        combos.append({
+            'id': combo_idx + 1,
+            'name': f"方案{combo_idx + 1}",
+            'items': items,
+            'total_grams': sum(i['grams'] for i in items),
+            'total_available': total_avail,
+            'under_target': total_avail < target_weight
+        })
+
+    return {
+        'recommendations': combos,
+        'insufficient': False,
+        'target_weight': target_weight
+    }
+
+
+def _weighted_sample_3(items, weights):
+    """加权不放回抽取3个（sqrt权重让克数高者优先但不极端）"""
+    import random
+    pool = list(range(len(items)))
+    pool_w = list(weights)
+    result = []
+    for _ in range(3):
+        total_w = sum(pool_w)
+        if total_w <= 0 or not pool:
+            break
+        pick = random.choices(pool, weights=[w/total_w for w in pool_w], k=1)[0]
+        result.append(items[pick])
+        idx = pool.index(pick)
+        pool.pop(idx)
+        pool_w.pop(idx)
+    return result
+
+
+def _distribute_grams(selected, effective_weight, total_available_grams):
+    """按比例分配克数，最后一道菜补齐差额"""
     items = []
     allocated_sum = 0
     for i, d in enumerate(selected):
         if i == len(selected) - 1:
-            # 最后一道菜用差值补齐，确保总和精确
             allocated = effective_weight - allocated_sum
         else:
             if total_available_grams > 0:
@@ -2447,16 +2508,7 @@ def _generate_blind_box(available_dishes, target_weight=800):
             'grams': allocated,
             'available_grams': d['grams']
         })
-
-    return {
-        'items': items,
-        'total_grams': sum(i['grams'] for i in items),
-        'target_weight': target_weight,
-        'total_available': total_available_grams,
-        'dish_count': len(selected),
-        'insufficient': n_available < 3,
-        'under_target': total_available_grams < target_weight
-    }
+    return items
 
 
 @app.route('/product2')

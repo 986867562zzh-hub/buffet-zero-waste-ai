@@ -13,9 +13,8 @@
 
     <!-- 结果标题 -->
     <div class="text-center mb-4 reveal reveal-scale">
-        <div class="blind-box-icon-lg mb-2">🎁</div>
         <h2 class="fw-bold">{{ _('p2r.blind_box_result') }}</h2>
-        <p class="text-muted">{{ result['current_time'] }} | {{ _('p2r.source_manual') }}</p>
+        <p class="text-muted">{{ result['current_time'] }}</p>
     </div>
 
     <!-- 警告提示 -->
@@ -25,55 +24,43 @@
     </div>
     {% endif %}
 
-    {% if result['under_target'] %}
-    <div class="alert alert-info text-center reveal reveal-scale">
-        <i class="fas fa-info-circle me-2"></i>{{ _('p2r.under_target_note') }}
-    </div>
-    {% endif %}
-
-    <!-- 三道菜卡片 -->
-    <div class="row g-4 mb-4">
-        {% for item in result['items'] %}
-        <div class="col-md-4 reveal {% if loop.index0 == 0 %}reveal-left{% elif loop.index0 == 2 %}reveal-right{% else %}reveal-scale{% endif %} reveal-delay-{{ loop.index0 }}">
-            <div class="blind-box-dish-card p-4 rounded-4 border bg-white text-center shadow-sm">
-                <div class="dish-number mb-2">{{ loop.index }}</div>
-                <h4 class="fw-bold mb-2">{{ dn(item.name) }}</h4>
-                <span class="badge bg-{{ {'肉类':'danger','海鲜':'info','蔬菜':'success','主食':'warning','汤品':'secondary','水果':'teal'}.get(item.category, 'primary') }} mb-2">{{ cn(item.category) }}</span>
-                <div class="grams-big mt-3">
-                    <span class="display-5 fw-bold text-success">{{ item.grams }}</span>
-                    <span class="fs-5 text-muted">g</span>
+    <!-- 3套方案 -->
+    {% for rec in result['recommendations'] %}
+    <div class="card border-0 shadow-lg mb-4 reveal {% if loop.index0 == 0 %}reveal-left{% elif loop.index0 == 2 %}reveal-right{% else %}reveal-scale{% endif %} reveal-delay-{{ loop.index0 }}">
+        <div class="card-header bg-white pt-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    {% if rec.id == 1 %}🥇{% elif rec.id == 2 %}🥈{% else %}🥉{% endif %}
+                    {{ _('p2r.recommend_title') }} {{ rec.name }}
+                </h5>
+                <div>
+                    <span class="fw-bold fs-5 text-success">{{ rec.total_grams }}g</span>
+                    <span class="text-muted"> / 800g</span>
+                    {% if rec.under_target %}
+                    <span class="badge bg-warning ms-1">{{ _('p2r.under_target_note') }}</span>
+                    {% endif %}
                 </div>
-                <small class="text-muted">可用 {{ item.available_grams }}g</small>
             </div>
         </div>
-        {% endfor %}
-
-        <!-- 如果不足3道菜，填充空白提示 -->
-        {% for i in range(3 - result['items']|length) %}
-        <div class="col-md-4 reveal reveal-delay-{{ result['items']|length + i }}">
-            <div class="blind-box-dish-card p-4 rounded-4 border bg-light text-center shadow-sm" style="border-style: dashed !important;">
-                <div class="dish-number text-muted mb-2">-</div>
-                <p class="text-muted mb-0">暂无更多菜品</p>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- 总重量 -->
-    <div class="card border-0 shadow-lg mb-4 reveal reveal-scale text-center">
-        <div class="card-body py-4">
-            <div class="text-muted small mb-1">{{ _('p2r.total_grams') }}</div>
-            <div class="display-4 fw-bold text-success mb-2">{{ result['total_grams'] }}<span class="fs-4 text-muted"> g</span></div>
-            <div class="text-muted">
-                {{ _('p2r.dish') }} × {{ result['dish_count'] }}
-                {% if result['under_target'] %}
-                <span class="badge bg-warning ms-2">目标 800g</span>
-                {% else %}
-                <span class="badge bg-success ms-2">✓ 800g</span>
-                {% endif %}
+        <div class="card-body">
+            <div class="row g-3">
+                {% for item in rec['items'] %}
+                <div class="col-md-4">
+                    <div class="blind-box-dish-card p-3 rounded-3 border bg-white text-center">
+                        <span class="badge bg-{{ {'肉类':'danger','海鲜':'info','蔬菜':'success','主食':'warning','汤品':'secondary','水果':'teal'}.get(item.category, 'primary') }} mb-2">{{ cn(item.category) }}</span>
+                        <h5 class="fw-bold mb-1">{{ dn(item.name) }}</h5>
+                        <div class="mt-2">
+                            <span class="fs-3 fw-bold text-success">{{ item.grams }}</span>
+                            <span class="text-muted">g</span>
+                        </div>
+                        <small class="text-muted">可用 {{ item.available_grams }}g</small>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
+    {% endfor %}
 
     <!-- 操作按钮 -->
     <div class="d-flex justify-content-center gap-3 mb-5 reveal reveal-scale">
@@ -89,19 +76,15 @@
 
 {% block extra_scripts %}
 <style>
-.blind-box-icon-lg { font-size: 72px; }
 .blind-box-dish-card { transition: all 0.2s ease; }
-.blind-box-dish-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
-.dish-number { width: 36px; height: 36px; border-radius: 50%; background: #f0a020; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin: 0 auto; }
-.grams-big { line-height: 1.2; }
+.blind-box-dish-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
 
 body.dark-theme .blind-box-dish-card { background: #1e293b !important; border-color: #334155 !important; }
-body.dark-theme .blind-box-dish-card[style*="dashed"] { background: #1a2332 !important; }
 
 @media print {
     .navbar, .breadcrumb, .btn, footer, .alert { display: none !important; }
     .blind-box-dish-card { break-inside: avoid; border: 2px solid #333 !important; }
-    body { font-size: 14pt; }
+    body { font-size: 12pt; }
 }
 </style>
 {% endblock %}
