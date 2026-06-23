@@ -32,7 +32,7 @@
     </div>
 </section>
 
-<!-- v2.6 #6: 实时数据横幅 -->
+<!-- 实时数据横幅 -->
 <div class="impact-banner text-white py-3 mt-0">
     <div class="container">
         <div class="row text-center g-2">
@@ -56,8 +56,61 @@
     </div>
 </div>
 
+<!-- v2.7 角色分流 -->
+<section class="role-section py-5">
+    <div class="container">
+        <h3 class="text-center text-muted mb-4">{{ _('index.role_title') }}</h3>
+        <div class="row g-4">
+            <!-- 食客 -->
+            <div class="col-lg-6 reveal reveal-left">
+                <div class="card role-card role-card-customer h-100 border-0 shadow-lg">
+                    <div class="card-body p-5 text-center">
+                        <div class="role-icon mb-4">🍽️</div>
+                        <h3 class="fw-bold mb-3">{{ _('index.role_customer') }}</h3>
+                        <p class="text-muted mb-4">{{ _('index.role_customer_desc') }}</p>
+                        <div class="role-features text-start d-inline-block mb-4">
+                            <div><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat1') }}</div>
+                            <div><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat2') }}</div>
+                            <div><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat3') }}</div>
+                            <div><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat4') }}</div>
+                        </div>
+                        <a href="/product1" class="btn btn-success btn-lg px-5">
+                            {{ _('index.role_customer_btn') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 酒店 -->
+            <div class="col-lg-6 reveal reveal-right">
+                <div class="card role-card role-card-hotel h-100 border-0 shadow-lg">
+                    <div class="card-body p-5 text-center">
+                        <div class="role-icon mb-4">🏨</div>
+                        <h3 class="fw-bold mb-3">{{ _('index.role_hotel') }}</h3>
+                        <p class="text-muted mb-4">{{ _('index.role_hotel_desc') }}</p>
+                        <div class="role-features text-start d-inline-block mb-4">
+                            <div><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat1') }}</div>
+                            <div><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat2') }}</div>
+                            <div><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat3') }}</div>
+                            <div><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat4') }}</div>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <a href="/product2" class="btn btn-primary btn-lg px-4">
+                                {{ _('index.role_hotel_btn') }}
+                            </a>
+                            <a href="/admin/library" class="btn btn-outline-primary btn-lg px-4">
+                                {{ _('index.role_hotel_library') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- 演示模式入口 -->
-<div class="container mt-3">
+<div class="container">
     <a href="/demo" class="demo-entry-card text-decoration-none">
         <div class="card border-0 shadow-lg bg-gradient-warning text-white overflow-hidden">
             <div class="card-body p-4 d-flex align-items-center justify-content-between">
@@ -74,61 +127,8 @@
     </a>
 </div>
 
-<!-- 产品卡片 -->
-<section class="products-section py-5">
-    <div class="container">
-        <div class="row g-4">
-            <!-- 产品一 -->
-            <div class="col-lg-6 reveal reveal-left">
-                <div class="card product-card h-100 border-0 shadow-lg">
-                    <div class="card-img-top product-img-1 d-flex align-items-center justify-content-center">
-                        <i class="fas fa-camera-retro fa-4x text-white opacity-75"></i>
-                    </div>
-                    <div class="card-body p-4">
-                        <span class="badge bg-success mb-2">{{ _('index.product1_badge') }}</span>
-                        <h3 class="card-title fw-bold">{{ _('index.product1_title') }}</h3>
-                        <p class="card-text text-muted">{{ _('index.product1_desc')|safe }}</p>
-                        <ul class="feature-list list-unstyled mb-4">
-                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat1') }}</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat2') }}</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat3') }}</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i>{{ _('index.product1_feat4') }}</li>
-                        </ul>
-                        <a href="/product1" class="btn btn-success btn-lg w-100">
-                            <i class="fas fa-camera me-2"></i>{{ _('index.start_btn') }}
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 产品二 -->
-            <div class="col-lg-6 reveal reveal-right">
-                <div class="card product-card h-100 border-0 shadow-lg">
-                    <div class="card-img-top product-img-2 d-flex align-items-center justify-content-center">
-                        <i class="fas fa-utensil-spoon fa-4x text-white opacity-75"></i>
-                    </div>
-                    <div class="card-body p-4">
-                        <span class="badge bg-primary mb-2">{{ _('index.product2_badge') }}</span>
-                        <h3 class="card-title fw-bold">{{ _('index.product2_title') }}</h3>
-                        <p class="card-text text-muted">{{ _('index.product2_desc')|safe }}</p>
-                        <ul class="feature-list list-unstyled mb-4">
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat1') }}</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat2') }}</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat3') }}</li>
-                            <li><i class="fas fa-check-circle text-primary me-2"></i>{{ _('index.product2_feat4') }}</li>
-                        </ul>
-                        <a href="/product2" class="btn btn-primary btn-lg w-100">
-                            <i class="fas fa-utensils me-2"></i>{{ _('index.start_btn') }}
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
 <!-- 工作流程 -->
-<section class="workflow-section py-5 bg-light">
+<section class="workflow-section py-5 bg-light mt-4">
     <div class="container">
         <h2 class="text-center fw-bold mb-5">{{ _('index.workflow_title') }}</h2>
         <div class="row g-4">
@@ -148,14 +148,14 @@
             </div>
             <div class="col-md-3 text-center reveal reveal-delay-3">
                 <div class="workflow-step">
-                    <div class="step-icon bg-warning text-white mx-auto mb-3"><i class="fas fa-calculator fa-2x"></i></div>
+                    <div class="step-icon bg-warning text-white mx-auto mb-3"><i class="fas fa-dice fa-2x"></i></div>
                     <h5>{{ _('index.wf_step3_title') }}</h5>
                     <p class="text-muted small">{{ _('index.wf_step3_desc') }}</p>
                 </div>
             </div>
             <div class="col-md-3 text-center reveal reveal-delay-4">
                 <div class="workflow-step">
-                    <div class="step-icon bg-danger text-white mx-auto mb-3"><i class="fas fa-tags fa-2x"></i></div>
+                    <div class="step-icon bg-danger text-white mx-auto mb-3"><i class="fas fa-print fa-2x"></i></div>
                     <h5>{{ _('index.wf_step4_title') }}</h5>
                     <p class="text-muted small">{{ _('index.wf_step4_desc') }}</p>
                 </div>
@@ -185,7 +185,7 @@
             </div>
             <div class="col-lg-3 col-md-6 reveal reveal-delay-3">
                 <div class="tech-card text-center p-4 rounded-3 shadow-sm h-100">
-                    <i class="fas fa-puzzle-piece fa-2x text-warning mb-3"></i>
+                    <i class="fas fa-dice fa-2x text-warning mb-3"></i>
                     <h5>{{ _('index.tech3_title') }}</h5>
                     <p class="small text-muted">{{ _('index.tech3_desc')|safe }}</p>
                 </div>
@@ -200,4 +200,20 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+/* 角色卡片 */
+.role-card { transition: all 0.3s ease; }
+.role-card:hover { transform: translateY(-6px); }
+.role-card-customer { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-top: 4px solid #2d8a56 !important; }
+.role-card-hotel { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-top: 4px solid #3b82f6 !important; }
+.role-icon { font-size: 72px; line-height: 1; }
+.role-features { font-size: 0.9rem; }
+.role-features div { margin-bottom: 6px; }
+
+body.dark-theme .role-card-customer { background: linear-gradient(135deg, #1a3028 0%, #1a2e1a 100%) !important; }
+body.dark-theme .role-card-hotel { background: linear-gradient(135deg, #1a2530 0%, #1a1a2e 100%) !important; }
+</style>
 {% endblock %}
