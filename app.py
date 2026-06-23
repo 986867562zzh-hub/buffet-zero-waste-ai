@@ -2392,102 +2392,100 @@ def product1_calorie_threshold():
     return jsonify({'success': True, 'threshold': threshold})
 
 
-# ---- 产品二：剩菜搭配 ----
-@app.route('/product2')
-def product2():
-    # v2.6 多语言饮食需求
-    dietary_ids = ["fat_loss","muscle_gain","low_carb_keto","vegan","diabetic_friendly",
-                   "senior_friendly","kids_meal","high_protein","mediterranean","high_fiber",
-                   "quick_work_lunch","light_salad","comfort_food"]
-    dietary_icons = {"fat_loss":"🔥","muscle_gain":"💪","low_carb_keto":"🥑","vegan":"🥬",
-                     "diabetic_friendly":"💚","senior_friendly":"👴","kids_meal":"👶",
-                     "high_protein":"🥩","mediterranean":"🫒","high_fiber":"🌾",
-                     "quick_work_lunch":"🍱","light_salad":"🥗","comfort_food":"🍲"}
-    dietary_types = [{"id": d, "icon": dietary_icons[d]} for d in dietary_ids]
-    # v2.6 手动选菜: 传递完整菜品库供前端渲染
-    lib = get_dish_library()
-    all_dishes = lib.list_dishes() if lib else []
-    ai_mode = AIEngine().mode
-    return render_template('product2_dishes.html',
-                         dietary_types=dietary_types,
-                         all_dishes=all_dishes,
-                         ai_mode=ai_mode)
+# ---- 产品二：盲盒搭配（v2.7 重写） ----
 
+# 9道固定菜品（带照片）
+PRODUCT2_DISHES = [
+    {"id": "guobaorou",       "name": "锅包肉",   "category": "肉类", "photo": "锅包肉.jpg"},
+    {"id": "yuxiangrousi",    "name": "鱼香肉丝", "category": "肉类", "photo": "鱼香肉丝.jpg"},
+    {"id": "hongshaorou",     "name": "红烧肉",   "category": "肉类", "photo": "红烧肉.jpg"},
+    {"id": "gongbaojiding",   "name": "宫保鸡丁", "category": "肉类", "photo": "宫保鸡丁.jpg"},
+    {"id": "liangbanhuanggua", "name": "凉拌黄瓜", "category": "蔬菜", "photo": "凉拌黄瓜.jpg"},
+    {"id": "yangzhouchaofan", "name": "扬州炒饭", "category": "主食", "photo": "扬州炒饭.jpg"},
+    {"id": "fanqiedanhuatang", "name": "番茄蛋花汤", "category": "汤品", "photo": "番茄蛋花汤.jpg"},
+    {"id": "shuiguopinpan",   "name": "水果拼盘", "category": "水果", "photo": "水果拼盘.jpg"},
+    {"id": "qingzhengluyu",   "name": "清蒸鲈鱼", "category": "海鲜", "photo": "清蒸鲈鱼.jpg"},
+]
 
-@app.route('/product2/identify', methods=['POST'])
-def product2_identify():
-    """Step 1+2: 酒店上传多张照片 → AI识别"""
-    uploaded_files = request.files.getlist('dish_photos')
+def _generate_blind_box(available_dishes, target_weight=800):
+    """
+    盲盒搭配算法:
+    - 固定800g总重目标
+    - 从可用菜品中随机选3道（不足3道则全选）
+    - 按可用克数比例分配目标重量
+    - 总可用克数 < 800g 时，全部使用
+    """
+    import random
 
-    # 过滤有效文件
-    valid_files = []
-    for f in uploaded_files:
-        if f.filename and f.filename.strip() != '':
-            valid_files.append(f)
+    n_available = len(available_dishes)
 
-    if not valid_files:
-        flash('请至少选择一张剩余菜品照片', 'error')
-        return redirect(url_for('product2'))
+    # 随机选3道（或全选）
+    if n_available <= 3:
+        selected = available_dishes[:]
+    else:
+        selected = random.sample(available_dishes, 3)
 
-    saved_paths = []
-    image_urls = []
-    for file in valid_files:
-        filepath, filename = _save_upload(file, app.config['UPLOAD_FOLDER'])
-        saved_paths.append(filepath)
-        image_urls.append(f'/static/uploads/{filename}')
+    total_available_grams = sum(d['grams'] for d in selected)
+    effective_weight = min(target_weight, total_available_grams)
 
-    # AI识别
-    engine = AIEngine()
-    identification = engine.identify_buffet_dishes(saved_paths)
+    # 按比例分配
+    items = []
+    allocated_sum = 0
+    for i, d in enumerate(selected):
+        if i == len(selected) - 1:
+            # 最后一道菜用差值补齐，确保总和精确
+            allocated = effective_weight - allocated_sum
+        else:
+            if total_available_grams > 0:
+                allocated = round(d['grams'] / total_available_grams * effective_weight)
+            else:
+                allocated = 0
+        allocated_sum += allocated
+        items.append({
+            'name': d['name'],
+            'category': d.get('category', '其他'),
+            'grams': allocated,
+            'available_grams': d['grams']
+        })
 
-    # 存储结果
-    session['identified_dishes'] = identification['identified_dishes']
-    session['id_result'] = {
-        'image_urls': image_urls,
-        'total_count': identification['total_count'],
-        'photos_analyzed': identification['photos_analyzed'],
-        'analysis_time': identification['analysis_time'],
-        'zones_detected': identification.get('zones_detected', []),
-        'analysis_method': identification.get('analysis_method', engine.mode)
+    return {
+        'items': items,
+        'total_grams': sum(i['grams'] for i in items),
+        'target_weight': target_weight,
+        'total_available': total_available_grams,
+        'dish_count': len(selected),
+        'insufficient': n_available < 3,
+        'under_target': total_available_grams < target_weight
     }
 
-    flash(f'识别完成！从{identification["photos_analyzed"]}张照片中识别出{identification["total_count"]}道剩余菜品', 'success')
 
-    return redirect(url_for('product2'))
+@app.route('/product2')
+def product2():
+    """盲盒搭配选菜页"""
+    return render_template('product2_dishes.html', dishes=PRODUCT2_DISHES)
 
 
 @app.route('/product2/match', methods=['POST'])
 def product2_match():
-    """v2.6: 手动选菜 + DeepSeek智能搭配"""
-    dietary_type = request.form.get('dietary_type', 'quick_work_lunch')
-    allergies_str = request.form.get('allergies', '')
-    allergies = [a.strip() for a in allergies_str.split(',') if a.strip()] if allergies_str else []
-
-    # v2.6 手动选菜: 从表单获取选中的菜品和数量(JSON)
+    """盲盒搭配生成：固定800g，随机选3道菜"""
     import json as _json
+
     selected_json = request.form.get('selected_dishes', '[]')
     try:
-        available_dishes = _json.loads(selected_json)
+        selected_dishes = _json.loads(selected_json)
     except (_json.JSONDecodeError, TypeError):
-        available_dishes = []
+        selected_dishes = []
 
-    if not available_dishes:
-        flash('请至少选择一道剩余菜品', 'error')
+    # 过滤出克数 > 0 的菜品
+    available = [d for d in selected_dishes if d.get('grams', 0) > 0]
+
+    if not available:
+        flash('请至少为一道菜品输入克数', 'error')
         return redirect(url_for('product2'))
 
-    engine = AIEngine()
-    result = engine.match_meals(dietary_type, allergies, available_dishes)
-
-    result['dietary_label'] = _diet(dietary_type)['name']
-    result['allergies'] = allergies
+    result = _generate_blind_box(available, target_weight=800)
     result['current_time'] = datetime.now().strftime('%H:%M')
-    result['source'] = 'manual_selection'
-    result['photos_analyzed'] = 0
-    result['total_leftover_count'] = len(available_dishes)
-    result['available_count'] = len(available_dishes)
-    result['id_time'] = datetime.now().strftime('%H:%M')
-    result['image_urls'] = []
-    result['ai_mode'] = engine.mode
+    result['ai_mode'] = AIEngine().mode
 
     session['last_matching'] = result
     return render_template('product2_result.html', result=result)
@@ -2554,15 +2552,11 @@ def api_analyze():
 @app.route('/api/match', methods=['POST'])
 def api_match():
     data = request.get_json()
-    dietary_type = data.get('dietary_type', 'quick_work_lunch')
-    allergies = data.get('allergies', [])
-
-    dishes = session.get('identified_dishes', None)
-    if not dishes:
-        dishes = load_dishes()
-
-    engine = AIEngine()
-    result = engine.match_meals(dietary_type, allergies, dishes)
+    available = data.get('dishes', [])
+    available = [d for d in available if d.get('grams', 0) > 0]
+    if not available:
+        return jsonify({"error": "请至少为一道菜品输入克数"}), 400
+    result = _generate_blind_box(available, target_weight=800)
     return jsonify(result)
 
 @app.route('/static/uploads/<filename>')

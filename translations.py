@@ -170,6 +170,17 @@ T = {
     'p2.match_footer': {'zh-CN':'DeepSeek AI 根据你的饮食需求，从选中的剩余菜品中智能搭配套餐','zh-TW':'DeepSeek AI 根據你的飲食需求，從選中的剩餘菜品中智能搭配套餐','en':'DeepSeek AI composes meal combos from selected leftovers based on your dietary needs'},
     'p2.loading_title': {'zh-CN':'AI 智能搭配中...','zh-TW':'AI 智能搭配中...','en':'AI Composing Meals...'},
     'p2.loading_sub': {'zh-CN':'DeepSeek 正在分析营养并生成套餐','zh-TW':'DeepSeek 正在分析營養並生成套餐','en':'DeepSeek analyzing nutrition & generating combos'},
+    # v2.7 盲盒搭配
+    'p2.blind_box_title': {'zh-CN':'固定800g 盲盒搭配','zh-TW':'固定800g 盲盒搭配','en':'Fixed 800g Blind Box'},
+    'p2.blind_box_desc': {'zh-CN':'厨房端：输入每道菜的剩余克数，系统随机选3道菜搭配成800g盲盒','zh-TW':'廚房端：輸入每道菜的剩餘克數，系統隨機選3道菜搭配成800g盲盒','en':'Kitchen: Enter remaining grams per dish. System randomly picks 3 dishes for an 800g blind box.'},
+    'p2.gram_input': {'zh-CN':'输入克数','zh-TW':'輸入克數','en':'Enter grams'},
+    'p2.total_grams_label': {'zh-CN':'已选总克数','zh-TW':'已選總克數','en':'Total selected'},
+    'p2.gram_unit': {'zh-CN':'g','zh-TW':'g','en':'g'},
+    'p2.match_btn': {'zh-CN':'🎲 生成盲盒搭配','zh-TW':'🎲 生成盲盒搭配','en':'🎲 Generate Blind Box'},
+    'p2.match_btn_disabled': {'zh-CN':'请至少输入一道菜的克数','zh-TW':'請至少輸入一道菜的克數','en':'Enter grams for at least one dish'},
+    'p2.insufficient_warning': {'zh-CN':'选中的菜品少于3道，盲盒将包含所有可用菜品','zh-TW':'選中的菜品少於3道，盲盒將包含所有可用菜品','en':'Fewer than 3 dishes selected, blind box includes all available'},
+    'p2.loading_title': {'zh-CN':'🎲 随机搭配中...','zh-TW':'🎲 隨機搭配中...','en':'🎲 Generating...'},
+    'p2.loading_sub': {'zh-CN':'正在从可用菜品中随机选取3道菜','zh-TW':'正在從可用菜品中隨機選取3道菜','en':'Randomly picking 3 dishes...'},
 
     # ── Product2 Result ──
     'p2r.title': {'zh-CN':'搭配结果 - 剩菜智能搭配','zh-TW':'搭配結果 - 剩菜智能搭配','en':'Results - Leftover Meal Composer'},
@@ -210,6 +221,16 @@ T = {
     'p2r.order_location_val': {'zh-CN':'酒店自助餐厅前台','zh-TW':'酒店自助餐廳前台','en':'Hotel Buffet Front Desk'},
     'p2r.order_time_warn': {'zh-CN':'请于 <strong>30分钟</strong> 内到店取餐','zh-TW':'請於 <strong>30分鐘</strong> 內到店取餐','en':'Please pick up within <strong>30 minutes</strong>'},
     'p2r.order_ok': {'zh-CN':'我知道了','zh-TW':'我知道了','en':'Got it'},
+    # v2.7 盲盒搭配结果
+    'p2r.blind_box_result': {'zh-CN':'🎲 盲盒搭配结果','zh-TW':'🎲 盲盒搭配結果','en':'🎲 Blind Box Result'},
+    'p2r.dish': {'zh-CN':'菜品','zh-TW':'菜品','en':'Dish'},
+    'p2r.grams': {'zh-CN':'所需克数','zh-TW':'所需克數','en':'Grams Needed'},
+    'p2r.total_grams': {'zh-CN':'总重量','zh-TW':'總重量','en':'Total Weight'},
+    'p2r.insufficient_note': {'zh-CN':'可用菜品不足3道，仅搭配以下菜品','zh-TW':'可用菜品不足3道，僅搭配以下菜品','en':'Fewer than 3 dishes available'},
+    'p2r.under_target_note': {'zh-CN':'总可用克数不足800g，已全部使用','zh-TW':'總可用克數不足800g，已全部使用','en':'Total available < 800g, all used'},
+    'p2r.regenerate_btn': {'zh-CN':'🔄 重新生成','zh-TW':'🔄 重新生成','en':'🔄 Regenerate'},
+    'p2r.print_btn': {'zh-CN':'🖨️ 打印出餐单','zh-TW':'🖨️ 打印出餐單','en':'🖨️ Print Order'},
+    'p2r.back_btn': {'zh-CN':'← 返回选菜','zh-TW':'← 返回選菜','en':'← Back to Selection'},
 
     # ── 演示模式 ──
     'demo.title': {'zh-CN':'演示模式 - 自助餐热量追踪','zh-TW':'演示模式 - 自助餐熱量追蹤','en':'Demo - Buffet Calorie Tracker'},

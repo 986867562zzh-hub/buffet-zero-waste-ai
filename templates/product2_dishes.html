@@ -15,13 +15,14 @@
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h3 class="fw-bold mb-2"><i class="fas fa-utensils me-2"></i>{{ _('p2.banner_title') }}</h3>
-                    <p class="mb-0 opacity-90">{{ _('p2.banner_desc')|safe }}</p>
+                    <h3 class="fw-bold mb-2"><i class="fas fa-box-open me-2"></i>{{ _('p2.blind_box_title') }}</h3>
+                    <p class="mb-0 opacity-90">{{ _('p2.blind_box_desc') }}</p>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <div class="bg-white bg-opacity-25 rounded-3 p-3 d-inline-block">
-                        <div class="small">{{ _('p2.flow_label') }}</div>
-                        <div class="fs-5 fw-bold">{{ _('p2.flow_text') }}</div>
+                    <div class="bg-white bg-opacity-25 rounded-3 p-3 d-inline-block text-center">
+                        <div class="small">{{ _('p2.total_grams_label') }}</div>
+                        <div class="fs-4 fw-bold"><span id="totalGramsDisplay">0</span> {{ _('p2.gram_unit') }}</div>
+                        <div class="small">/ 800g</div>
                     </div>
                 </div>
             </div>
@@ -30,12 +31,12 @@
 
     <form action="/product2/match" method="POST" id="matchForm" data-auto-loading>
     <div class="row g-4">
-        <!-- ===== 左侧：菜品选择网格 ===== -->
-        <div class="col-lg-7 reveal reveal-left">
+        <!-- ===== 左侧：9道菜照片卡片 ===== -->
+        <div class="col-lg-8 reveal reveal-left">
             <div class="card border-0 shadow-lg h-100">
                 <div class="card-header bg-white border-0 pt-3">
                     <h5 class="mb-0">
-                        <i class="fas fa-check-square me-2 text-success"></i>{{ _('p2.step1_title') }}
+                        <i class="fas fa-images me-2 text-success"></i>{{ _('p2.step1_title') }}
                         <span class="badge bg-success ms-2" id="selectedCount">0{{ _('p2.selected_count') }}</span>
                     </h5>
                 </div>
@@ -43,38 +44,32 @@
                     <p class="text-muted small mb-3">
                         <i class="fas fa-lightbulb text-warning me-1"></i> {{ _('p2.step1_hint') }}
                     </p>
-                    <div class="row g-2" id="dishGrid">
-                        {% for dish in all_dishes %}
+                    <div class="row g-3" id="dishGrid">
+                        {% for dish in dishes %}
                         <div class="col-6 col-md-4">
-                            <div class="dish-select-card p-3 rounded-3 border bg-white h-100 position-relative"
-                                 data-dish-id="{{ dish.id }}"
+                            <div class="dish-photo-card p-2 rounded-3 border bg-white h-100 position-relative"
                                  data-dish-name="{{ dish.name }}"
                                  data-dish-category="{{ dish.category }}"
-                                 data-dish-cooking="{{ dish.cooking }}"
-                                 data-dish-calories="{{ dish.calories }}"
-                                 data-dish-protein="{{ dish.protein }}"
-                                 data-dish-carbs="{{ dish.carbs }}"
-                                 data-dish-fat="{{ dish.fat }}"
-                                 data-dish-fiber="{{ dish.fiber }}"
-                                 data-dish-sodium="{{ dish.sodium }}"
-                                 data-dish-gi="{{ dish.gi }}"
-                                 data-dish-price="{{ dish.original_price }}"
                                  onclick="toggleDish(this)"
                                  role="checkbox" aria-checked="false" tabindex="0">
                                 <div class="dish-check-mark">✓</div>
-                                <div class="fw-bold small">{{ dn(dish.name) }}</div>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <span class="badge bg-{{ {'肉类':'danger','海鲜':'info','蔬菜':'success','主食':'warning','汤品':'secondary','甜点':'pink','水果':'teal'}.get(dish.category, 'primary') }}" style="font-size:0.6rem;">{{ cn(dish.category) }}</span>
-                                    <small class="text-muted">{{ ckn(dish.cooking) }}</small>
+                                <img src="{{ url_for('static', filename='dish_photos/' + dish.photo) }}"
+                                     alt="{{ dn(dish.name) }}" class="dish-photo rounded-2 mb-2"
+                                     loading="lazy">
+                                <div class="fw-bold small text-center">{{ dn(dish.name) }}</div>
+                                <div class="text-center mb-2">
+                                    <span class="badge bg-{{ {'肉类':'danger','海鲜':'info','蔬菜':'success','主食':'warning','汤品':'secondary','水果':'teal'}.get(dish.category, 'primary') }}" style="font-size:0.6rem;">{{ cn(dish.category) }}</span>
                                 </div>
-                                <div class="small text-muted mt-1">{{ dish.calories }}kcal · ¥{{ dish.original_price }}</div>
-                                <div class="quantity-selector mt-2" style="display:none;">
+                                <div class="gram-input-wrapper mt-1" style="display:none;">
                                     <div class="input-group input-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="event.stopPropagation(); changeQty(this, -1)">−</button>
-                                        <input type="number" class="form-control text-center qty-input" value="3" min="1" max="15" onclick="event.stopPropagation()" onchange="validateQty(this)">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="event.stopPropagation(); changeQty(this, 1)">+</button>
+                                        <input type="number" class="form-control text-center gram-input"
+                                               placeholder="{{ _('p2.gram_input') }}"
+                                               min="0" max="5000" step="10" value=""
+                                               onclick="event.stopPropagation()"
+                                               oninput="updateSelection()"
+                                               onkeydown="event.stopPropagation()">
+                                        <span class="input-group-text">{{ _('p2.gram_unit') }}</span>
                                     </div>
-                                    <small class="text-muted">{{ _('p2.qty_label') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -89,57 +84,43 @@
                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deselectAll()">
                             <i class="fas fa-times me-1"></i>{{ _('p2.clear_all') }}
                         </button>
-                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="selectByCategory('肉类')">{{ _('p2.cat_meat') }}</button>
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="selectByCategory('海鲜')">{{ _('p2.cat_seafood') }}</button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="selectByCategory('蔬菜')">{{ _('p2.cat_veggie') }}</button>
-                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="selectByCategory('主食')">{{ _('p2.cat_staple') }}</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectByCategory('汤品')">{{ _('p2.cat_soup') }}</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== 右侧：饮食需求 ===== -->
-        <div class="col-lg-5 reveal reveal-right">
-            <div class="card border-0 shadow-lg mb-3">
+        <!-- ===== 右侧：盲盒配置 ===== -->
+        <div class="col-lg-4 reveal reveal-right">
+            <div class="card border-0 shadow-lg">
                 <div class="card-header bg-white border-0 pt-3">
                     <h5 class="mb-0">
-                        <i class="fas fa-sliders-h me-2 text-success"></i>{{ _('p2.step2_title') }}
-                        <span class="badge bg-success ms-2">{{ _('p2.consumer_badge') }}</span>
+                        <i class="fas fa-dice me-2 text-warning"></i>{{ _('p2.blind_box_title') }}
                     </h5>
                 </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        {% for dt in dietary_types %}
-                        <div class="col-6 col-md-4">
-                            <input type="radio" class="btn-check" name="dietary_type"
-                                   id="diet_{{ dt.id }}" value="{{ dt.id }}"
-                                   {% if dt.id == 'quick_work_lunch' %}checked{% endif %}>
-                            <label class="btn btn-outline-primary w-100 h-100 dietary-option p-2" for="diet_{{ dt.id }}">
-                                <div class="fs-4 mb-1">{{ dt.icon }}</div>
-                                <div class="fw-bold" style="font-size:0.7rem;">{{ diet_name(dt.id) }}</div>
-                                <div class="text-muted" style="font-size:0.55rem;">{{ diet_desc(dt.id) }}</div>
-                            </label>
+                <div class="card-body text-center">
+                    <div class="blind-box-icon mb-3">🎁</div>
+                    <h4 class="fw-bold text-success mb-2">800g</h4>
+                    <p class="text-muted small mb-3">{{ _('p2.blind_box_desc') }}</p>
+                    <div class="d-flex justify-content-center gap-3 mb-3">
+                        <div class="text-center">
+                            <div class="fs-5 fw-bold text-danger" id="dishCount">0</div>
+                            <small class="text-muted">{{ _('p2.selected_count') }}</small>
                         </div>
-                        {% endfor %}
+                        <div class="text-center">
+                            <div class="fs-5 fw-bold text-primary" id="totalG">0g</div>
+                            <small class="text-muted">{{ _('p2.total_grams_label') }}</small>
+                        </div>
                     </div>
-                    <div class="mt-3 p-3 bg-light rounded-3">
-                        <label class="form-label fw-bold small mb-2">
-                            <i class="fas fa-exclamation-triangle text-warning me-1"></i>{{ _('p2.allergy_label') }}
-                        </label>
-                        <input type="text" class="form-control form-control-sm" name="allergies"
-                               placeholder="{{ _('p2.allergy_placeholder') }}">
-                    </div>
+                    <p class="text-warning small" id="insufficientHint" style="display:none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>{{ _('p2.insufficient_warning') }}
+                    </p>
                 </div>
             </div>
 
             <input type="hidden" name="selected_dishes" id="selectedDishesInput" value="[]">
-            <button type="submit" class="btn btn-success btn-lg w-100" id="matchBtn">
-                <i class="fas fa-magic me-2"></i><span id="matchBtnText">{{ _('p2.match_btn_empty') }}</span>
+            <button type="submit" class="btn btn-warning btn-lg w-100 mt-3" id="matchBtn" disabled>
+                <i class="fas fa-dice me-2"></i><span id="matchBtnText">{{ _('p2.match_btn_disabled') }}</span>
             </button>
-            <p class="text-muted small text-center mt-2">
-                <i class="fas fa-info-circle me-1"></i>{{ _('p2.match_footer') }}
-            </p>
         </div>
     </div>
     </form>
@@ -149,38 +130,29 @@
 {% block extra_scripts %}
 <script>
 // ============================================
-// v2.6 手动选菜交互逻辑 (多语言)
+// v2.7 盲盒搭配选菜逻辑
 // ============================================
 
-var LANG = '{{ lang }}';
 var T = {
     'selected_count': '{{ _('p2.selected_count') }}',
-    'match_btn_empty': '{{ _('p2.match_btn_empty') }}',
+    'match_btn_disabled': '{{ _('p2.match_btn_disabled') }}',
     'match_btn': '{{ _('p2.match_btn') }}',
-    'match_btn_suffix': '{{ _('p2.match_btn_suffix') }}',
     'loading_title': '{{ _('p2.loading_title') }}',
     'loading_sub': '{{ _('p2.loading_sub') }}',
 };
 
 function getSelectedDishes() {
     var selected = [];
-    document.querySelectorAll('.dish-select-card.selected').forEach(function(card) {
-        var qtyInput = card.querySelector('.qty-input');
-        var qty = parseInt(qtyInput ? qtyInput.value : 3) || 3;
-        selected.push({
-            name: card.dataset.dishName,
-            category: card.dataset.dishCategory,
-            cooking: card.dataset.dishCooking,
-            calories: parseInt(card.dataset.dishCalories) || 0,
-            protein: parseFloat(card.dataset.dishProtein) || 0,
-            carbs: parseFloat(card.dataset.dishCarbs) || 0,
-            fat: parseFloat(card.dataset.dishFat) || 0,
-            fiber: parseFloat(card.dataset.dishFiber) || 0,
-            sodium: parseInt(card.dataset.dishSodium) || 0,
-            gi: parseInt(card.dataset.dishGi) || 50,
-            original_price: parseInt(card.dataset.dishPrice) || 0,
-            quantity: qty
-        });
+    document.querySelectorAll('.dish-photo-card.selected').forEach(function(card) {
+        var gramInput = card.querySelector('.gram-input');
+        var grams = parseInt(gramInput ? gramInput.value : 0) || 0;
+        if (grams > 0) {
+            selected.push({
+                name: card.dataset.dishName,
+                category: card.dataset.dishCategory,
+                grams: grams
+            });
+        }
     });
     return selected;
 }
@@ -188,77 +160,68 @@ function getSelectedDishes() {
 function updateSelection() {
     var selected = getSelectedDishes();
     document.getElementById('selectedDishesInput').value = JSON.stringify(selected);
-    document.getElementById('selectedCount').textContent = selected.length + T.selected_count;
+
+    var count = selected.length;
+    var totalGrams = selected.reduce(function(s, d) { return s + d.grams; }, 0);
+
+    document.getElementById('selectedCount').textContent = count + T.selected_count;
+    document.getElementById('dishCount').textContent = count;
+    document.getElementById('totalG').textContent = totalGrams + 'g';
+    document.getElementById('totalGramsDisplay').textContent = totalGrams;
+
+    var hint = document.getElementById('insufficientHint');
+    if (hint) hint.style.display = (count > 0 && count < 3) ? 'block' : 'none';
+
     var btn = document.getElementById('matchBtn');
     var btnText = document.getElementById('matchBtnText');
-    if (selected.length === 0) {
+    if (count === 0) {
         btn.disabled = true;
-        btn.classList.remove('btn-success');
+        btn.classList.remove('btn-warning');
         btn.classList.add('btn-secondary');
-        btnText.textContent = T.match_btn_empty;
+        btnText.textContent = T.match_btn_disabled;
     } else {
         btn.disabled = false;
         btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-success');
-        btnText.textContent = T.match_btn + selected.length + T.match_btn_suffix;
+        btn.classList.add('btn-warning');
+        btnText.textContent = T.match_btn;
     }
 }
 
 function toggleDish(card) {
     card.classList.toggle('selected');
     card.setAttribute('aria-checked', card.classList.contains('selected') ? 'true' : 'false');
-    var qtyDiv = card.querySelector('.quantity-selector');
-    if (qtyDiv) qtyDiv.style.display = card.classList.contains('selected') ? 'block' : 'none';
-    updateSelection();
-}
-
-function changeQty(btn, delta) {
-    var input = btn.parentElement.querySelector('.qty-input');
-    if (input) {
-        var val = Math.max(1, Math.min(15, (parseInt(input.value) || 1) + delta));
-        input.value = val;
-        updateSelection();
-    }
-}
-
-function validateQty(input) {
-    input.value = Math.max(1, Math.min(15, parseInt(input.value) || 1));
+    var gramWrapper = card.querySelector('.gram-input-wrapper');
+    var gramInput = card.querySelector('.gram-input');
+    if (gramWrapper) gramWrapper.style.display = card.classList.contains('selected') ? 'block' : 'none';
+    if (!card.classList.contains('selected') && gramInput) gramInput.value = '';
+    if (card.classList.contains('selected') && gramInput) gramInput.focus();
     updateSelection();
 }
 
 function selectAll() {
-    document.querySelectorAll('.dish-select-card').forEach(function(card) {
+    document.querySelectorAll('.dish-photo-card').forEach(function(card) {
         card.classList.add('selected');
         card.setAttribute('aria-checked', 'true');
-        var q = card.querySelector('.quantity-selector');
-        if (q) q.style.display = 'block';
+        var gw = card.querySelector('.gram-input-wrapper');
+        if (gw) gw.style.display = 'block';
     });
     updateSelection();
 }
 
 function deselectAll() {
-    document.querySelectorAll('.dish-select-card.selected').forEach(function(card) {
+    document.querySelectorAll('.dish-photo-card.selected').forEach(function(card) {
         card.classList.remove('selected');
         card.setAttribute('aria-checked', 'false');
-        var q = card.querySelector('.quantity-selector');
-        if (q) q.style.display = 'none';
+        var gw = card.querySelector('.gram-input-wrapper');
+        var gi = card.querySelector('.gram-input');
+        if (gw) gw.style.display = 'none';
+        if (gi) gi.value = '';
     });
     updateSelection();
 }
 
-function selectByCategory(cat) {
-    document.querySelectorAll('.dish-select-card').forEach(function(card) {
-        if (card.dataset.dishCategory === cat) {
-            card.classList.add('selected');
-            card.setAttribute('aria-checked', 'true');
-            var q = card.querySelector('.quantity-selector');
-            if (q) q.style.display = 'block';
-        }
-    });
-    updateSelection();
-}
-
-document.querySelectorAll('.dish-select-card').forEach(function(card) {
+// Keyboard support
+document.querySelectorAll('.dish-photo-card').forEach(function(card) {
     card.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDish(card); }
     });
@@ -275,12 +238,16 @@ document.getElementById('matchForm').addEventListener('submit', function() {
 </script>
 
 <style>
-.dish-select-card { cursor: pointer; transition: all 0.2s ease; user-select: none; }
-.dish-select-card:hover { border-color: #2d8a56 !important; box-shadow: 0 4px 12px rgba(45,138,86,0.15); transform: translateY(-2px); }
-.dish-select-card.selected { border-color: #2d8a56 !important; background: #f0faf4 !important; box-shadow: 0 0 0 2px rgba(45,138,86,0.3); }
-.dish-select-card .dish-check-mark { position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; transition: all 0.2s; }
-.dish-select-card.selected .dish-check-mark { background: #2d8a56; }
-body.dark-theme .dish-select-card { background: #1e293b !important; border-color: #334155 !important; }
-body.dark-theme .dish-select-card.selected { background: #1a3a2e !important; border-color: #2d8a56 !important; }
+.dish-photo-card { cursor: pointer; transition: all 0.2s ease; user-select: none; }
+.dish-photo-card:hover { border-color: #f0a020 !important; box-shadow: 0 4px 12px rgba(240,160,32,0.2); transform: translateY(-2px); }
+.dish-photo-card.selected { border-color: #f0a020 !important; background: #fffdf0 !important; box-shadow: 0 0 0 2px rgba(240,160,32,0.4); }
+.dish-photo-card .dish-check-mark { position: absolute; top: 12px; right: 16px; width: 26px; height: 26px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; transition: all 0.2s; z-index: 2; }
+.dish-photo-card.selected .dish-check-mark { background: #f0a020; }
+.dish-photo { width: 100%; height: 120px; object-fit: cover; }
+.gram-input-wrapper { transition: all 0.2s ease; }
+.blind-box-icon { font-size: 64px; }
+
+body.dark-theme .dish-photo-card { background: #1e293b !important; border-color: #334155 !important; }
+body.dark-theme .dish-photo-card.selected { background: #2d2410 !important; border-color: #f0a020 !important; }
 </style>
 {% endblock %}
