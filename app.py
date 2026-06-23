@@ -1434,18 +1434,31 @@ class SmartMatcher:
             dish, sim = scored[0]
             sim_pct = round(sim * 100)
 
+            # 🔧 v2.7: 先算实际餐盘覆盖率（不管匹配相似度，这是真实的物理量）
+            img = Image.open(uploaded_image_path).convert('RGB')
+            img_small = img.resize((64, 64))
+            pixels = list(img_small.getdata())
+            bg_count = sum(1 for r, g, b in pixels if r > 200 and g > 200 and b > 200)
+            coverage = 1.0 - bg_count / len(pixels)
+            actual_coverage_pct = round(coverage * 100)
+
+            # 根据实际覆盖率判断份量（不是根据相似度！）
+            if actual_coverage_pct > 75:
+                portion = '大份'
+            elif actual_coverage_pct > 35:
+                portion = '中份'
+            else:
+                portion = '小份'
+
             if sim > 0.70:
                 conf = 'high'
-                portion = '中份'
-                evidence = f"✅ 高置信度匹配 {dish['name']}（相似度{sim_pct}%）"
+                evidence = f"✅ 高置信度匹配 {dish['name']}（相似度{sim_pct}%，覆盖率{actual_coverage_pct}%）"
             elif sim > 0.55:
                 conf = 'medium'
-                portion = '小份'
-                evidence = f"🔍 中等置信度，最接近 {dish['name']}（相似度{sim_pct}%）"
+                evidence = f"🔍 中等置信度，最接近 {dish['name']}（相似度{sim_pct}%，覆盖率{actual_coverage_pct}%）"
             else:
                 conf = 'low'
-                portion = '小份'
-                evidence = f"⚠️ 低置信度（{sim_pct}%），可能是 {dish['name']}，建议换张清晰照片重试"
+                evidence = f"⚠️ 低置信度（{sim_pct}%），可能是 {dish['name']}（覆盖率{actual_coverage_pct}%）"
 
             matches = [{
                 'name': dish['name'],
@@ -1453,18 +1466,12 @@ class SmartMatcher:
                 'confidence': conf,
                 'similarity': sim_pct,
                 'category': dish['category'],
-                'estimated_remaining_percentage': sim_pct,
+                'estimated_remaining_percentage': actual_coverage_pct,  # ← 用实际覆盖率！
                 'estimated_original_portion': portion,
                 'visual_evidence': evidence
             }]
 
-            # 估算餐盘覆盖率
-            img = Image.open(uploaded_image_path).convert('RGB')
-            img_small = img.resize((64, 64))
-            pixels = list(img_small.getdata())
-            bg_count = sum(1 for r, g, b in pixels if r > 200 and g > 200 and b > 200)
-            coverage = 1.0 - bg_count / len(pixels)
-            waste_pct = round(coverage * 100)
+            waste_pct = actual_coverage_pct
             if waste_pct < 10:
                 status = 'empty'
             elif waste_pct < 25:
@@ -2298,16 +2305,21 @@ def product1_analyze():
             portion = item.get('estimated_original_portion', '中份')
             cal = estimate_calories_for_item(name, category, portion)
 
-            # 根据匹配置信度/覆盖率缩放热量（不是整盘菜都是一个菜）
-            confidence = item.get('confidence', 'medium')
-            similarity = item.get('similarity', 50)
-            if confidence == 'low':
-                cal = int(cal * 0.4)       # 低置信度→可能是误匹配，热量×40%
-            elif confidence == 'medium':
-                cal = int(cal * 0.65)       # 中置信度→部分匹配，热量×65%
-            # high置信度保持原热量
+            # 🔧 v2.7: 按盘内实际剩余比例缩放热量（这是核心！）
+            #    estimated_remaining_percentage 表示盘子里还剩多少食物（0-100）
+            #    例如锅包肉330kcal，如果盘内只剩30% → 330 × 0.30 = 99kcal
+            remaining_pct = item.get('estimated_remaining_percentage', 100)
+            if isinstance(remaining_pct, (int, float)) and 0 <= remaining_pct <= 100:
+                cal = int(cal * remaining_pct / 100.0)
 
-            # 限制单道菜最大500kcal（一张照片不会全是同一道菜）
+            # 匹配置信度微调（不确定的识别结果适当降低热量，避免高估）
+            confidence = item.get('confidence', 'medium')
+            if confidence == 'low':
+                cal = int(cal * 0.6)        # 低置信度→可能是误匹配
+            elif confidence == 'medium':
+                cal = int(cal * 0.8)        # 中置信度→部分匹配
+
+            # 限制单道菜最大500kcal
             cal = min(cal, 500)
             item['calories'] = cal
             this_round_calories += cal
