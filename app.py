@@ -383,7 +383,7 @@ class SmartImageAnalyzer:
     COLOR_FOOD_MAP = [
         # (HSV范围, 食物类别, 典型菜品举例)
         ({"h_min": 35, "h_max": 85, "s_min": 40, "v_min": 30}, "蔬菜/绿叶菜", ["炒青菜", "西兰花", "菠菜", "生菜沙拉", "凉拌黄瓜"]),
-        ({"h_min": 0, "h_max": 20, "s_min": 50, "v_min": 40}, "肉类/红肉", ["红烧肉", "牛排", "叉烧", "烤鸡腿", "炸猪排"]),
+        ({"h_min": 0, "h_max": 20, "s_min": 50, "v_min": 40}, "肉类/红肉", ["红烧肉", "锅包肉", "牛排", "叉烧", "烤鸡腿", "炸猪排"]),
         ({"h_min": 20, "h_max": 35, "s_min": 50, "v_min": 50}, "油炸/煎制食物", ["炸鸡", "春卷", "煎鱼", "炸虾", "天妇罗"]),
         ({"h_min": 85, "h_max": 130, "s_min": 20, "v_min": 50}, "海鲜/鱼类", ["清蒸鱼", "白灼虾", "三文鱼", "鱼片"]),
         ({"h_min": 10, "h_max": 30, "s_min": 15, "v_min": 70}, "米饭/面食", ["白米饭", "炒饭", "面条", "馒头", "面包"]),
@@ -452,7 +452,10 @@ class SmartImageAnalyzer:
                 if rule[1] == food_type:
                     examples = rule[2]
                     break
-            dish_name = examples[hash(str(count)) % len(examples)] if examples else food_type
+            # 🔧 v2.7: 用MD5确定性hash替代Python hash（避免每次运行结果不同）
+            import hashlib as _hl
+            h = int(_hl.md5(str(count).encode()).hexdigest()[:8], 16)
+            dish_name = examples[h % len(examples)] if examples else food_type
 
             items.append({
                 "name": dish_name,
