@@ -956,31 +956,49 @@ class DeepSeekVision:
         )
 
     def analyze_plate_waste(self, image_path):
-        """餐盘浪费分析 — v2.6 PIL+DeepSeek混合方案"""
+        """餐盘浪费分析 — v2.7 PIL+DeepSeek闭集混合方案"""
         if not self.available:
             return None
         try:
             # PIL提取图片特征
             img_desc = self._describe_image(image_path)
 
+            # 加载菜品库
+            if self._library is None:
+                self._library = get_dish_library()
+            lib_dishes = self._library.list_dishes() if self._library else []
+            lib_text = ""
+            if lib_dishes:
+                lib_text = "【固定菜品库 — 你只能从以下菜品中选择匹配】\n"
+                for d in lib_dishes:
+                    features = d.get('visual_features', '')
+                    lib_text += f"- {d['name']} | {d['category']} | {d['cooking']}"
+                    if features:
+                        lib_text += f" | 特征: {features[:120]}"
+                    lib_text += "\n"
+                lib_text += "\n"
+
             prompt = (
                 "你是一个专业的美食识别助手。\n"
                 "以下是顾客用餐后餐盘的计算机视觉分析：\n\n"
                 f"{img_desc}\n\n"
+                + lib_text +
                 "【任务】根据颜色和纹理特征，判断餐盘的食物剩余情况。\n"
                 "- 食物覆盖率<15%: empty(光盘), 15-35%: light(少量), 35-60%: moderate(中等), 60-80%: heavy(较多), >80%: full(几乎没吃)\n"
-                "- 根据颜色特征推断可能是什么食物（参考：金黄色→炸肉类，红褐色→红烧，白色→清蒸/白灼，绿色→蔬菜）\n\n"
+                "- 每道菜必须从【固定菜品库】中选择最匹配的菜名，不要编造新菜名\n"
+                "- 不确定的食物标记为confidence: low，但仍需从菜品库中选最接近的\n\n"
                 "返回纯JSON（不要markdown）：\n"
                 '{"plate_status":"empty|light|moderate|heavy|full",'
                 '"overall_waste_percentage":数字(0-100),'
-                '"items":[{"name":"菜名","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                '"items":[{"name":"菜名(必须来自菜品库)","category":"主食|肉类|海鲜|蔬菜|汤品|甜点|水果",'
+                '"confidence":"high|medium|low",'
                 '"estimated_remaining_percentage":数字,"estimated_original_portion":"小份|中份|大份",'
                 '"visual_evidence":"颜色和特征依据"}],'
                 '"summary":"一句中文总结"}\n'
-                "基于颜色分析诚实推断，不确定的食物不要编造。"
+                "基于颜色分析诚实推断，不确定的食物不要编造，必须从菜品库选择最接近的。"
             )
             resp = self.client.chat.completions.create(
-                model="deepseek-v4-pro",
+                model="deepseek-chat",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=self.max_tokens, temperature=0.1
             )
@@ -1040,7 +1058,7 @@ class DeepSeekVision:
             )
 
             resp = self.client.chat.completions.create(
-                model="deepseek-v4-pro",
+                model="deepseek-chat",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=self.max_tokens, temperature=0.1
             )
