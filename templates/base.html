@@ -25,27 +25,31 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
                     <li class="nav-item">
                         <a class="nav-link" href="/" aria-current="page"><i class="fas fa-home me-1"></i>{{ _('nav.home') }}</a>
                     </li>
+                    <!-- 食客端 -->
+                    <li class="nav-item nav-divider d-none d-lg-block"><span class="nav-role-tag nav-role-customer">{{ _('nav.role_customer') }}</span></li>
                     <li class="nav-item">
                         <a class="nav-link" href="/product1">
                             <i class="fas fa-camera me-1"></i>{{ _('nav.waste_score') }}
                         </a>
                     </li>
+                    <!-- 酒店端 -->
+                    <li class="nav-item nav-divider d-none d-lg-block"><span class="nav-role-tag nav-role-hotel">{{ _('nav.role_hotel') }}</span></li>
                     <li class="nav-item">
                         <a class="nav-link" href="/product2">
-                            <i class="fas fa-utensils me-1"></i>{{ _('nav.meal_match') }}
+                            <i class="fas fa-box-open me-1"></i>{{ _('nav.blind_box') }}
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-warning" href="/admin/library">
+                        <a class="nav-link" href="/admin/library">
                             <i class="fas fa-database me-1"></i>{{ _('nav.dish_library') }}
                         </a>
                     </li>
                     <!-- 语言切换 -->
-                    <li class="nav-item dropdown">
+                    <li class="nav-item dropdown ms-lg-2">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" style="font-size:0.85rem;">
                             <i class="fas fa-globe me-1"></i>{{ languages.get(lang, lang) }}
                         </a>
@@ -105,6 +109,23 @@
     <!-- 自定义JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}?v=2.6.3"></script>
     {% block extra_scripts %}{% endblock %}
+<style>
+/* 导航栏角色标签 */
+.nav-role-tag {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+.nav-role-customer { background: rgba(45,138,86,0.25); color: #a8f0c8; }
+.nav-role-hotel { background: rgba(59,130,246,0.25); color: #a8d0ff; }
+.nav-divider { display: flex; align-items: center; margin: 0 4px; }
+@media (max-width: 991px) {
+    .nav-role-tag { display: inline-block !important; margin: 4px 0 0 12px; }
+}
+</style>
 </body>
 </html>
 
