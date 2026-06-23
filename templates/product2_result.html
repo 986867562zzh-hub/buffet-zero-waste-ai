@@ -15,17 +15,17 @@
     <div class="text-center mb-4 reveal reveal-scale">
         <div class="blind-box-icon-lg mb-2">🎁</div>
         <h2 class="fw-bold">{{ _('p2r.blind_box_result') }}</h2>
-        <p class="text-muted">{{ result.current_time }} | {{ _('p2r.source_manual') }}</p>
+        <p class="text-muted">{{ result['current_time'] }} | {{ _('p2r.source_manual') }}</p>
     </div>
 
     <!-- 警告提示 -->
-    {% if result.insufficient %}
+    {% if result['insufficient'] %}
     <div class="alert alert-warning text-center reveal reveal-scale">
         <i class="fas fa-exclamation-triangle me-2"></i>{{ _('p2r.insufficient_note') }}
     </div>
     {% endif %}
 
-    {% if result.under_target %}
+    {% if result['under_target'] %}
     <div class="alert alert-info text-center reveal reveal-scale">
         <i class="fas fa-info-circle me-2"></i>{{ _('p2r.under_target_note') }}
     </div>
@@ -33,7 +33,7 @@
 
     <!-- 三道菜卡片 -->
     <div class="row g-4 mb-4">
-        {% for item in result.items %}
+        {% for item in result['items'] %}
         <div class="col-md-4 reveal {% if loop.index0 == 0 %}reveal-left{% elif loop.index0 == 2 %}reveal-right{% else %}reveal-scale{% endif %} reveal-delay-{{ loop.index0 }}">
             <div class="blind-box-dish-card p-4 rounded-4 border bg-white text-center shadow-sm">
                 <div class="dish-number mb-2">{{ loop.index }}</div>
@@ -49,8 +49,8 @@
         {% endfor %}
 
         <!-- 如果不足3道菜，填充空白提示 -->
-        {% for i in range(3 - result.items|length) %}
-        <div class="col-md-4 reveal reveal-delay-{{ result.items|length + i }}">
+        {% for i in range(3 - result['items']|length) %}
+        <div class="col-md-4 reveal reveal-delay-{{ result['items']|length + i }}">
             <div class="blind-box-dish-card p-4 rounded-4 border bg-light text-center shadow-sm" style="border-style: dashed !important;">
                 <div class="dish-number text-muted mb-2">-</div>
                 <p class="text-muted mb-0">暂无更多菜品</p>
@@ -63,10 +63,10 @@
     <div class="card border-0 shadow-lg mb-4 reveal reveal-scale text-center">
         <div class="card-body py-4">
             <div class="text-muted small mb-1">{{ _('p2r.total_grams') }}</div>
-            <div class="display-4 fw-bold text-success mb-2">{{ result.total_grams }}<span class="fs-4 text-muted"> g</span></div>
+            <div class="display-4 fw-bold text-success mb-2">{{ result['total_grams'] }}<span class="fs-4 text-muted"> g</span></div>
             <div class="text-muted">
-                {{ _('p2r.dish') }} × {{ result.dish_count }}
-                {% if result.under_target %}
+                {{ _('p2r.dish') }} × {{ result['dish_count'] }}
+                {% if result['under_target'] %}
                 <span class="badge bg-warning ms-2">目标 800g</span>
                 {% else %}
                 <span class="badge bg-success ms-2">✓ 800g</span>
